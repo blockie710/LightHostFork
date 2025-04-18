@@ -1,22 +1,26 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "IconMenu.hpp"
+#include "SafePluginScanner.h"
+#include "SplashScreen.h"
 
 #if ! (JUCE_PLUGINHOST_VST || JUCE_PLUGINHOST_VST3 || JUCE_PLUGINHOST_AU)
- #error "If you're building the audio plugin host, you probably want to enable VST and/or AU support"
+ #error "If you're building the plugin host, you probably want to enable VST and/or AU support"
 #endif
 
-class PluginHostApp  : public JUCEApplication
+class PluginHostApp : public juce::JUCEApplication
 {
-
 public:
     PluginHostApp() {}
 
-    void initialise (const String&) override
+    void initialise(const String& commandLine) override
     {
-        // Enable high-DPI support on Windows 11
+        // Enable high-DPI support on all platforms
         #if JUCE_WINDOWS
         Desktop::getInstance().setGlobalScaleFactor(1.0);
         #endif
+        
+        // Show splash screen early in initialization
+        showSplashScreen();
         
         PropertiesFile::Options options;
         options.applicationName     = getApplicationName();

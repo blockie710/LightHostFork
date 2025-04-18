@@ -1,3 +1,6 @@
+// PluginWindow.h - Nova Host
+// Updated for NovaHost fork 2025
+
 #ifndef PluginWindow_h
 #define PluginWindow_h
 

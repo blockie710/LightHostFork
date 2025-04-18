@@ -3,15 +3,15 @@
   <assemblyIdentity
       version="1.0.0.0"
       processorArchitecture="*"
-      name="YourName.NovaHost"
+      name="NovaHost"
       type="win32"
   />
-  <description>Nova Host - A modern audio plugin host application</description>
+  <description>Nova Host - Modern audio plugin host application</description>
   
   <!-- Windows 10 and 11 compatibility -->
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
-      <!-- Windows 10 -->
+      <!-- Windows 10 and 11 -->
       <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
       <!-- Windows 8.1 -->
       <supportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}"/>

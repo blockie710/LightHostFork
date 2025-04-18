@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="NTe0XB0ij" name="Nova Host" projectType="guiapp" version="1.0.0"
-              juceLinkage="amalg_multi" juceFolder="../../../juce" buildVST="1"
+              juceLinkage="amalg_multi" juceFolder="lib/juce" buildVST="1"
               buildRTAS="0" buildAU="1" vstFolderMac="~/SDKs/vstsdk2.4" vstFolderPC="c:\SDKs\vstsdk2.4"
               rtasFolderMac="~/SDKs/PT_80_SDK" rtasFolderPC="c:\SDKs\PT_80_SDK"
-              pluginName="Juce Project" pluginDesc="Juce Project" pluginManufacturer="yourcompany"
-              pluginManufacturerCode="abcd" pluginCode="Abcd" pluginChannelConfigs="{1, 1}, {2, 2}"
+              pluginName="Nova Host" pluginDesc="Nova Host" pluginManufacturer="NovaHost Developers"
+              pluginManufacturerCode="NOVA" pluginCode="NHST" pluginChannelConfigs="{1, 1}, {2, 2}"
               pluginIsSynth="0" pluginWantsMidiIn="0" pluginProducesMidiOut="0"
               pluginSilenceInIsSilenceOut="0" pluginTailLength="0" pluginEditorRequiresKeys="0"
-              pluginAUExportPrefix="JuceProjectAU" pluginAUViewClass="JuceProjectAU_V1"
-              pluginRTASCategory="" bundleIdentifier="com.yourdomain.novahost"
-              jucerVersion="4.2.4" companyName="Your Name" includeBinaryInAppConfig="1"
-              companyWebsite="https://www.yourdomain.com" companyEmail="contact@yourdomain.com"
+              pluginAUExportPrefix="NovaHostAU" pluginAUViewClass="NovaHostAU_V1"
+              pluginRTASCategory="" bundleIdentifier="com.novahost.app"
+              jucerVersion="4.2.4" companyName="NovaHost Developers" includeBinaryInAppConfig="1"
+              companyWebsite="https://github.com/NovaHost" companyEmail="info@novahost.com"
               displaySplashScreen="0" reportAppUsage="0" splashScreenColour="Dark"
-              buildVST3="1" buildAAX="0" aaxIdentifier="com.yourdomain.novahost">
+              buildVST3="1" buildAAX="0" aaxIdentifier="com.novahost.app">
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" vstFolder="" rtasFolder="~/SDKs/PT_80_SDK"
                objCExtraSuffix="M73TRi" vst3Folder="" smallIcon="pmwje3" bigIcon="kxxp8K">
@@ -26,20 +26,20 @@
                        headerPath="" cppLanguageStandard="c++11" cppLibType="libc++"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib/juce"/>
-        <MODULEPATH id="juce_opengl" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
-        <MODULEPATH id="juce_graphics" path="lib/juce"/>
-        <MODULEPATH id="juce_events" path="lib/juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
-        <MODULEPATH id="juce_core" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_video" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_opengl" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_events" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_cryptography" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_core" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <VS2022 targetFolder="Builds/VisualStudio2022" vstFolder="" vst3Folder=""
@@ -56,20 +56,20 @@
                      postbuildCommand="copy /Y &quot;$(SolutionDir)..\..\Installer\NovaHost.manifest&quot; &quot;$(TargetPath).manifest&quot;"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib/juce"/>
-        <MODULEPATH id="juce_opengl" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
-        <MODULEPATH id="juce_graphics" path="lib/juce"/>
-        <MODULEPATH id="juce_events" path="lib/juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
-        <MODULEPATH id="juce_core" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_video" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_opengl" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_events" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_cryptography" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_core" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
       </MODULEPATHS>
     </VS2022>
     <VS2015 targetFolder="Builds/VisualStudio2015" vstFolder="" vst3Folder=""
@@ -81,20 +81,20 @@
                        isDebug="0" optimisation="3" targetName="Nova Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib/juce"/>
-        <MODULEPATH id="juce_opengl" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
-        <MODULEPATH id="juce_graphics" path="lib/juce"/>
-        <MODULEPATH id="juce_events" path="lib/juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
-        <MODULEPATH id="juce_core" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_video" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_opengl" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_events" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_cryptography" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_core" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
       </MODULEPATHS>
     </VS2015>
     <CODEBLOCKS_LINUX targetFolder="Builds/CodeBlocksLinux" vstFolder="" vst3Folder=""
@@ -104,20 +104,20 @@
         <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="Nova Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib/juce"/>
-        <MODULEPATH id="juce_opengl" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
-        <MODULEPATH id="juce_graphics" path="lib/juce"/>
-        <MODULEPATH id="juce_events" path="lib/juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
-        <MODULEPATH id="juce_core" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_video" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_opengl" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_events" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_cryptography" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_core" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
       </MODULEPATHS>
     </CODEBLOCKS_LINUX>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" vstFolder="" vst3Folder="">
@@ -128,20 +128,20 @@
                        targetName="Nova Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib/juce"/>
-        <MODULEPATH id="juce_opengl" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
-        <MODULEPATH id="juce_graphics" path="lib/juce"/>
-        <MODULEPATH id="juce_events" path="lib/juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
-        <MODULEPATH id="juce_core" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_video" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_opengl" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_events" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_cryptography" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_core" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="/workspaces/LightHostFork/lib/juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="/workspaces/LightHostFork/lib/juce/modules"/>
       </MODULEPATHS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
@@ -155,6 +155,12 @@
             file="Source/HostStartup.cpp"/>
       <FILE id="SO1QjM" name="IconMenu.cpp" compile="1" resource="0" file="Source/IconMenu.cpp"/>
       <FILE id="pzKV1s" name="IconMenu.hpp" compile="0" resource="0" file="Source/IconMenu.hpp"/>
+      <FILE id="K58fGt" name="SafePluginScanner.h" compile="0" resource="0"
+            file="Source/SafePluginScanner.h"/>
+      <FILE id="Xm8fTp" name="SplashScreen.cpp" compile="1" resource="0"
+            file="Source/SplashScreen.cpp"/>
+      <FILE id="T5nPwR" name="SplashScreen.h" compile="0" resource="0"
+            file="Source/SplashScreen.h"/>
     </GROUP>
     <GROUP id="{B6DF5A1E-D458-C20A-CD4E-C679E4461593}" name="Resources">
       <FILE id="kxxp8K" name="icon.png" compile="0" resource="1" file="Resources/icon.png"/>
