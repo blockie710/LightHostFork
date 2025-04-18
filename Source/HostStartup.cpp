@@ -48,7 +48,7 @@ public:
         JUCEApplicationBase::quit();
     }
 
-    const String getApplicationName() override       { return "Light Host"; }
+    const String getApplicationName() override       { return "Nova Host"; }
     const String getApplicationVersion() override    { return ProjectInfo::versionString; }
     bool moreThanOneInstanceAllowed() override       {
         StringArray multiInstance = getParameter("-multi-instance");

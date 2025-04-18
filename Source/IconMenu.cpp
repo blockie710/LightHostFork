@@ -1,11 +1,12 @@
 //
 //  IconMenu.cpp
-//  Light Host
+//  Nova Host
 //
 //  Created by Rolando Islas on 12/26/15.
-//
+//  Modified for NovaHost fork 2025
 //
 
+// Update the include path to match project structure
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "IconMenu.hpp"
 #include "PluginWindow.h"
@@ -936,4 +937,3 @@ void IconMenu::safePluginScan(AudioPluginFormat* format, const String& formatNam
     }
     
     scanDialog = nullptr;
-}

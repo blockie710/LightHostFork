@@ -1,9 +1,9 @@
 //
 //  IconMenu.hpp
-//  Light Host
+//  Nova Host
 //
 //  Created by Rolando Islas on 12/26/15.
-//
+//  Modified for NovaHost fork 2025
 //
 
 #ifndef IconMenu_hpp

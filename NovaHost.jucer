@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="NTe0XB0ij" name="Light Host" projectType="guiapp" version="1.3.0"
+<JUCERPROJECT id="NTe0XB0ij" name="Nova Host" projectType="guiapp" version="1.0.0"
               juceLinkage="amalg_multi" juceFolder="../../../juce" buildVST="1"
               buildRTAS="0" buildAU="1" vstFolderMac="~/SDKs/vstsdk2.4" vstFolderPC="c:\SDKs\vstsdk2.4"
               rtasFolderMac="~/SDKs/PT_80_SDK" rtasFolderPC="c:\SDKs\PT_80_SDK"
@@ -9,19 +9,19 @@
               pluginIsSynth="0" pluginWantsMidiIn="0" pluginProducesMidiOut="0"
               pluginSilenceInIsSilenceOut="0" pluginTailLength="0" pluginEditorRequiresKeys="0"
               pluginAUExportPrefix="JuceProjectAU" pluginAUViewClass="JuceProjectAU_V1"
-              pluginRTASCategory="" bundleIdentifier="com.rolandoislas.lighthost"
-              jucerVersion="4.2.4" companyName="Rolando Islas" includeBinaryInAppConfig="1"
-              companyWebsite="https://www.rolandoislas.com" companyEmail="admin@rolandoislas.com"
+              pluginRTASCategory="" bundleIdentifier="com.yourdomain.novahost"
+              jucerVersion="4.2.4" companyName="Your Name" includeBinaryInAppConfig="1"
+              companyWebsite="https://www.yourdomain.com" companyEmail="contact@yourdomain.com"
               displaySplashScreen="0" reportAppUsage="0" splashScreenColour="Dark"
-              buildVST3="1" buildAAX="0" aaxIdentifier="com.rolandoislas.lighthost">
+              buildVST3="1" buildAAX="0" aaxIdentifier="com.yourdomain.novahost">
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" vstFolder="" rtasFolder="~/SDKs/PT_80_SDK"
                objCExtraSuffix="M73TRi" vst3Folder="" smallIcon="pmwje3" bigIcon="kxxp8K">
       <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="Light Host"
+        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="Nova Host"
                        osxSDK="default" osxCompatibility="default" osxArchitecture="default"
                        headerPath=""/>
-        <CONFIGURATION name="Release" isDebug="0" optimisation="2" targetName="Light Host"
+        <CONFIGURATION name="Release" isDebug="0" optimisation="2" targetName="Nova Host"
                        osxSDK="default" osxCompatibility="10.7 SDK" osxArchitecture="default"
                        headerPath="" cppLanguageStandard="c++11" cppLibType="libc++"/>
       </CONFIGURATIONS>
@@ -46,14 +46,14 @@
             smallIcon="pmwje3" bigIcon="kxxp8K">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                     isDebug="1" optimisation="1" targetName="Light Host" 
+                     isDebug="1" optimisation="1" targetName="Nova Host" 
                      enableIncrementalLinking="1" headerPath="..\..\..\Installer"
-                     postbuildCommand="copy /Y &quot;$(SolutionDir)..\..\Installer\LightHost.manifest&quot; &quot;$(TargetPath).manifest&quot;"/>
+                     postbuildCommand="copy /Y &quot;$(SolutionDir)..\..\Installer\NovaHost.manifest&quot; &quot;$(TargetPath).manifest&quot;"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                     isDebug="0" optimisation="3" targetName="Light Host" 
+                     isDebug="0" optimisation="3" targetName="Nova Host" 
                      fastMath="1" linkTimeOptimisation="1" useRuntimeLibDLL="0"
                      headerPath="..\..\..\Installer"
-                     postbuildCommand="copy /Y &quot;$(SolutionDir)..\..\Installer\LightHost.manifest&quot; &quot;$(TargetPath).manifest&quot;"/>
+                     postbuildCommand="copy /Y &quot;$(SolutionDir)..\..\Installer\NovaHost.manifest&quot; &quot;$(TargetPath).manifest&quot;"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_video" path="lib/juce"/>
@@ -76,9 +76,9 @@
             smallIcon="pmwje3" bigIcon="kxxp8K" userNotes="Place ASIO SDK headers in juce folder.">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="1" optimisation="1" targetName="Light Host"/>
+                       isDebug="1" optimisation="1" targetName="Nova Host"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="0" optimisation="3" targetName="Light Host"/>
+                       isDebug="0" optimisation="3" targetName="Nova Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_video" path="lib/juce"/>
@@ -100,8 +100,8 @@
     <CODEBLOCKS_LINUX targetFolder="Builds/CodeBlocksLinux" vstFolder="" vst3Folder=""
                       smallIcon="pmwje3" bigIcon="kxxp8K" userNotes="Header search path for Steinberg SDK not being added to codeblocks.">
       <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="Light Host"/>
-        <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="Light Host"/>
+        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="Nova Host"/>
+        <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="Nova Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_video" path="lib/juce"/>
@@ -123,9 +123,9 @@
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" vstFolder="" vst3Folder="">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
-                       targetName="Light Host"/>
+                       targetName="Nova Host"/>
         <CONFIGURATION name="Release" libraryPath="/usr/X11R6/lib/" isDebug="0" optimisation="3"
-                       targetName="Light Host"/>
+                       targetName="Nova Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_video" path="lib/juce"/>
@@ -145,7 +145,7 @@
       </MODULEPATHS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
-  <MAINGROUP id="YdWL7hi7p" name="Light Host">
+  <MAINGROUP id="YdWL7hi7p" name="Nova Host">
     <GROUP id="{1B23ABDC-E658-7C9C-3584-0C960D2AE323}" name="Source">
       <FILE id="2b09bSUt" name="PluginWindow.cpp" compile="1" resource="0"
             file="Source/PluginWindow.cpp"/>
