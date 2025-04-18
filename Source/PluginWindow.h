@@ -31,7 +31,16 @@ private:
     AudioProcessorGraph::Node* owner;
     WindowFormatType type;
 
-    float getDesktopScaleFactor() const override     { return 1.0f; }
+    // Update to support Windows 11 high-DPI displays
+    #if JUCE_WINDOWS
+    float getDesktopScaleFactor() const override 
+    {
+        // Get the appropriate scale factor based on the display
+        return Desktop::getInstance().getDisplays().getDisplayContaining(getScreenBounds().getCentre()).scale;
+    }
+    #else
+    float getDesktopScaleFactor() const override { return 1.0f; }
+    #endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginWindow)
 };
@@ -51,6 +60,5 @@ inline String toString (PluginWindow::WindowFormatType type)
 inline String getLastXProp (PluginWindow::WindowFormatType type)    { return "uiLastX_" + toString (type); }
 inline String getLastYProp (PluginWindow::WindowFormatType type)    { return "uiLastY_" + toString (type); }
 inline String getOpenProp  (PluginWindow::WindowFormatType type)    { return "uiopen_"  + toString (type); }
-
 
 #endif /* PluginWindow_hpp */

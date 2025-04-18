@@ -285,9 +285,20 @@ void IconMenu::timerCallback()
 		POINT iconLocation;
 		iconLocation.x = 0;
 		iconLocation.y = 0;
-		GetCursorPos(&iconLocation);
-		x = iconLocation.x;
-		y = iconLocation.y;
+		if (GetCursorPos(&iconLocation))
+		{
+			// Apply DPI scaling to get accurate coordinates
+			double scaleFactor = Desktop::getInstance().getDisplays().getDisplayContaining(Point<int>(iconLocation.x, iconLocation.y)).scale;
+			x = static_cast<int>(iconLocation.x / scaleFactor);
+			y = static_cast<int>(iconLocation.y / scaleFactor);
+		}
+		else
+		{
+			// Fallback in case GetCursorPos fails
+			Rectangle<int> screenArea = Desktop::getInstance().getDisplays().getDisplayContaining(Point<int>(0, 0)).userArea;
+			x = screenArea.getCentreX();
+			y = screenArea.getCentreY();
+		}
 	}
 	juce::Rectangle<int> rect(x, y, 1, 1);
 	menu.showMenuAsync(PopupMenu::Options().withTargetScreenArea(rect), ModalCallbackFunction::forComponent(menuInvocationCallback, this));
