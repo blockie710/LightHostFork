@@ -1,12 +1,16 @@
-// PluginWindow.h - Nova Host
-// Updated for NovaHost fork 2025
+//
+//  PluginWindow.h
+//  Nova Host
+//
+//  Created originally for Light Host by Rolando Islas
+//  Modified for NovaHost April 18, 2025
+//
 
-#ifndef PluginWindow_h
-#define PluginWindow_h
+#pragma once
 
-ApplicationProperties& getAppProperties();
+#include <JuceHeader.h>
 
-class PluginWindow  : public DocumentWindow
+class PluginWindow : public juce::DocumentWindow, private juce::Timer
 {
 public:
     enum WindowFormatType
@@ -14,54 +18,42 @@ public:
         Normal = 0,
         Generic,
         Programs,
-        Parameters,
-        NumTypes
+        Parameters
     };
 
-    PluginWindow (Component* pluginEditor, AudioProcessorGraph::Node*, WindowFormatType);
-    ~PluginWindow();
+    PluginWindow (juce::Component* pluginEditor,
+                 juce::AudioProcessorGraph::Node* owner,
+                 WindowFormatType type);
 
-    static PluginWindow* getWindowFor (AudioProcessorGraph::Node*, WindowFormatType);
+    ~PluginWindow() override;
+
+    static PluginWindow* getWindowFor (juce::AudioProcessorGraph::Node* node,
+                                       WindowFormatType type);
 
     static void closeCurrentlyOpenWindowsFor (const uint32 nodeId);
-    static void closeAllCurrentlyOpenWindows();
-    static bool containsActiveWindows();
 
+    static void closeAllCurrentlyOpenWindows();
+
+    static bool containsActiveWindows();
+    
+    // Override DocumentWindow methods
     void moved() override;
     void closeButtonPressed() override;
+    
+    // Timer callback for handling UI responsiveness
+    void timerCallback() override;
+
+    static juce::String getLastXProp (WindowFormatType type)    { return "uiLastX_" + juce::String ((int) type); }
+    static juce::String getLastYProp (WindowFormatType type)    { return "uiLastY_" + juce::String ((int) type); }
+    static juce::String getOpenProp  (WindowFormatType type)    { return "uiopen_"  + juce::String ((int) type); }
 
 private:
-    AudioProcessorGraph::Node* owner;
+    juce::AudioProcessorGraph::Node* owner;
     WindowFormatType type;
-
-    // Update to support Windows 11 high-DPI displays
-    #if JUCE_WINDOWS
-    float getDesktopScaleFactor() const override 
-    {
-        // Get the appropriate scale factor based on the display
-        return Desktop::getInstance().getDisplays().getDisplayContaining(getScreenBounds().getCentre()).scale;
-    }
-    #else
-    float getDesktopScaleFactor() const override { return 1.0f; }
-    #endif
+    int positionCheckCount = 5; // Number of timer checks to perform
+    
+    // Helper method to position the window intelligently
+    void positionPluginWindow();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginWindow)
 };
-
-inline String toString (PluginWindow::WindowFormatType type)
-{
-    switch (type)
-    {
-        case PluginWindow::Normal:     return "Normal";
-        case PluginWindow::Generic:    return "Generic";
-        case PluginWindow::Programs:   return "Programs";
-        case PluginWindow::Parameters: return "Parameters";
-        default:                       return String();
-    }
-}
-
-inline String getLastXProp (PluginWindow::WindowFormatType type)    { return "uiLastX_" + toString (type); }
-inline String getLastYProp (PluginWindow::WindowFormatType type)    { return "uiLastY_" + toString (type); }
-inline String getOpenProp  (PluginWindow::WindowFormatType type)    { return "uiopen_"  + toString (type); }
-
-#endif /* PluginWindow_h */

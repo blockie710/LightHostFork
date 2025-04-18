@@ -29,22 +29,22 @@ public:
 
         checkArguments(&options);
 
-        appProperties = new ApplicationProperties();
-        appProperties->setStorageParameters (options);
+        appProperties = std::make_unique<ApplicationProperties>();
+        appProperties->setStorageParameters(options);
 
-        LookAndFeel::setDefaultLookAndFeel (&lookAndFeel);
+        LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
 
-        mainWindow = new IconMenu();
-		#if JUCE_MAC
-			Process::setDockIconVisible(false);
-		#endif
+        mainWindow = std::make_unique<IconMenu>();
+        #if JUCE_MAC
+            Process::setDockIconVisible(false);
+        #endif
     }
 
     void shutdown() override
     {
         mainWindow = nullptr;
         appProperties = nullptr;
-        LookAndFeel::setDefaultLookAndFeel (nullptr);
+        LookAndFeel::setDefaultLookAndFeel(nullptr);
     }
 
     void systemRequestedQuit() override
@@ -52,22 +52,43 @@ public:
         JUCEApplicationBase::quit();
     }
 
-    const String getApplicationName() override       { return "Nova Host"; }
-    const String getApplicationVersion() override    { return ProjectInfo::versionString; }
-    bool moreThanOneInstanceAllowed() override       {
+    const String getApplicationName() override    { return "Nova Host"; }
+    const String getApplicationVersion() override { return ProjectInfo::versionString; }
+    bool moreThanOneInstanceAllowed() override    {
         StringArray multiInstance = getParameter("-multi-instance");
         return multiInstance.size() == 2;
     }
 
     ApplicationCommandManager commandManager;
-    ScopedPointer<ApplicationProperties> appProperties;
+    std::unique_ptr<ApplicationProperties> appProperties;
     LookAndFeel_V3 lookAndFeel;
 
 private:
-    ScopedPointer<IconMenu> mainWindow;
+    std::unique_ptr<IconMenu> mainWindow;
+    DialogWindow* splashWindow = nullptr;
+
+    // Show a splash screen with version and build information
+    void showSplashScreen()
+    {
+        splashWindow = new DialogWindow("Loading Nova Host", 
+                                      Colours::transparentBlack, 
+                                      true, 
+                                      false);
+                                      
+        SplashScreen* content = new SplashScreen();
+        splashWindow->setContentOwned(content, false);
+        splashWindow->setUsingNativeTitleBar(false);
+        splashWindow->setOpaque(false);
+        splashWindow->setDropShadowEnabled(true);
+        splashWindow->setVisible(true);
+        splashWindow->toFront(true);
+        
+        // The SplashScreen component will delete itself when done
+        // and also close the splashWindow that owns it
+    }
 
     StringArray getParameter(String lookFor) {
-        StringArray parameters = getCommandLineParameterArray();
+        StringArray parameters = JUCEApplication::getCommandLineParameters();
         StringArray found;
         for (int i = 0; i < parameters.size(); ++i)
         {
@@ -75,7 +96,7 @@ private:
             if (param.contains(lookFor))
             {
                 found.add(lookFor);
-                int delimiter = param.indexOf(0, "=") + 1;
+                int delimiter = param.indexOf("=") + 1;
                 String val = param.substring(delimiter);
                 found.add(val);
                 return found;
@@ -91,8 +112,8 @@ private:
     }
 };
 
-static PluginHostApp& getApp()                      { return *dynamic_cast<PluginHostApp*>(JUCEApplication::getInstance()); }
-ApplicationCommandManager& getCommandManager()      { return getApp().commandManager; }
-ApplicationProperties& getAppProperties()           { return *getApp().appProperties; }
+static PluginHostApp& getApp()                       { return *dynamic_cast<PluginHostApp*>(JUCEApplication::getInstance()); }
+ApplicationCommandManager& getCommandManager()       { return getApp().commandManager; }
+ApplicationProperties& getAppProperties()            { return *getApp().appProperties; }
 
-START_JUCE_APPLICATION (PluginHostApp)
+START_JUCE_APPLICATION(PluginHostApp)

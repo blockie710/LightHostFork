@@ -2,18 +2,28 @@
 
 A modern VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, and Linux that sits in the menu/task bar.
 
-Nova Host is a fork of the Light Host project, enhanced with improved Windows support, a more robust plugin scanning system, and other features.
-
 ## Features
 
-- Lightweight menu/taskbar application with minimal UI
-- Supports VST, VST3, Audio Unit (macOS), Audio Unit v3 (macOS), AAX, ARA, LADSPA, and LV2 plugin formats
-- Dynamic plugin chain with bypass capability
-- Safe plugin scanning system with blacklisting for problematic plugins
-- High DPI display support for Windows 10/11
-- Multi-instance support via command line parameters
-- Persistent plugin settings
-- Plugin order can be rearranged with drag and drop
+- **Lightweight Interface**: Lives in your system tray/menu bar for minimal visual footprint
+- **Multiple Plugin Formats**: VST, VST3, Audio Unit (macOS), Audio Unit v3 (macOS), LADSPA, LV2, AAX, and ARA plugins
+- **Plugin Chain**: Dynamic processing chain with unlimited plugins
+- **Enhanced Safety**: Robust plugin scanning with automatic blacklisting for problematic plugins
+- **Modern Display Support**: High DPI scaling for Windows 10/11 and modern macOS
+- **Multi-instance Capability**: Run multiple instances with separate settings via command-line parameters
+- **Persistent Settings**: Plugin states and audio settings are remembered between sessions
+- **Rearrangeable Plugins**: Drag and drop interface for reordering plugins in your chain
+- **Bypass Options**: Easily bypass individual plugins while keeping them in your chain
+
+## What's New in Nova Host
+
+Nova Host is a fork of the Light Host project with significant enhancements:
+
+- Completely redesigned plugin scanning system that prevents crashes
+- Windows 10/11 professional installer with VST directory detection
+- Proper high DPI handling on all platforms
+- Memory leak fixes and stability improvements
+- Enhanced UI with better plugin organization
+- Support for the latest plugin formats
 
 ## Building from Source
 
@@ -33,6 +43,7 @@ Nova Host is a fork of the Light Host project, enhanced with improved Windows su
 4. Build using your platform's development environment
 
 #### For Windows Users
+
 See the detailed [Windows Installation Guide](WINDOWS_INSTALL_GUIDE.md) for specific instructions on building and creating the installer.
 
 ## Command Line Options

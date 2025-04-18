@@ -2,77 +2,78 @@
 //  IconMenu.hpp
 //  Nova Host
 //
-//  Created by Rolando Islas on 12/26/15.
-//  Modified for NovaHost fork 2025
+//  Created originally for Light Host by Rolando Islas on 12/26/15.
+//  Modified for NovaHost April 18, 2025
 //
 
 #ifndef IconMenu_hpp
 #define IconMenu_hpp
 
+#include <JuceHeader.h>
 #include <memory>
 #include <mutex>
+#include <vector>
+#include <map>
 
-ApplicationProperties& getAppProperties();
+juce::ApplicationProperties& getAppProperties();
 
-class IconMenu : public SystemTrayIconComponent, private Timer, public ChangeListener
+class IconMenu : public juce::SystemTrayIconComponent, private juce::Timer, public juce::ChangeListener
 {
 public:
     IconMenu();
     ~IconMenu();
-    void mouseDown(const MouseEvent&);
+    void mouseDown(const juce::MouseEvent&);
     static void menuInvocationCallback(int id, IconMenu*);
-    void changeListenerCallback(ChangeBroadcaster* changed);
-	static String getKey(String type, PluginDescription plugin);
+    void changeListenerCallback(juce::ChangeBroadcaster* changed) override;
+    static juce::String getKey(juce::String type, juce::PluginDescription plugin);
 
-	const int INDEX_EDIT, INDEX_BYPASS, INDEX_DELETE, INDEX_MOVE_UP, INDEX_MOVE_DOWN;
+    const int INDEX_EDIT, INDEX_BYPASS, INDEX_DELETE, INDEX_MOVE_UP, INDEX_MOVE_DOWN;
 private:
-	#if JUCE_MAC
+    #if JUCE_MAC
     std::string exec(const char* cmd);
-	#endif
-    void timerCallback();
+    #endif
+    void timerCallback() override;
     void reloadPlugins();
     void showAudioSettings();
     void loadActivePlugins();
+    void startAudioDevice();
+    void loadAllPluginLists();
     void savePluginStates();
     void deletePluginStates();
-	PluginDescription getNextPluginOlderThanTime(int &time);
-	void removePluginsLackingInputOutput();
-	std::vector<PluginDescription> getTimeSortedList();
-	void setIcon();
+    void clearBlacklist();
+    juce::PluginDescription getNextPluginOlderThanTime(int &time);
+    void removePluginsLackingInputOutput();
+    std::vector<juce::PluginDescription> getTimeSortedList();
+    void setIcon();
     
     // Plugin blacklisting and safe scanning functionality
     void loadPluginBlacklist();
     void savePluginBlacklist();
-    void blacklistPlugin(const PluginDescription& plugin);
-    bool isPluginBlacklisted(const String& pluginId) const;
-    void safePluginScan(AudioPluginFormat* format, const String& formatName);
+    void blacklistPlugin(const juce::PluginDescription& plugin);
+    bool isPluginBlacklisted(const juce::String& pluginId) const;
+    void safePluginScan(juce::AudioPluginFormat* format, const juce::String& formatName);
     
-    AudioDeviceManager deviceManager;
-    AudioPluginFormatManager formatManager;
-    KnownPluginList knownPluginList;
-    KnownPluginList activePluginList;
-    KnownPluginList::SortMethod pluginSortMethod;
-    PopupMenu menu;
-    std::unique_ptr<PluginDirectoryScanner> scanner;
+    juce::AudioDeviceManager deviceManager;
+    juce::AudioPluginFormatManager formatManager;
+    juce::KnownPluginList knownPluginList;
+    juce::KnownPluginList activePluginList;
+    juce::KnownPluginList::SortMethod pluginSortMethod;
+    juce::PopupMenu menu;
+    std::unique_ptr<juce::PluginDirectoryScanner> scanner;
     bool menuIconLeftClicked;
-    AudioProcessorGraph graph;
-    AudioProcessorPlayer player;
-    AudioProcessorGraph::Node *inputNode;
-    AudioProcessorGraph::Node *outputNode;
-    StringArray pluginBlacklist;
-    std::mutex blacklistMutex;
-	#if JUCE_WINDOWS
-	int x, y;
-	#endif
+    juce::AudioProcessorGraph graph;
+    juce::AudioProcessorPlayer player;
+    juce::AudioProcessorGraph::Node* inputNode;
+    juce::AudioProcessorGraph::Node* outputNode;
+    juce::StringArray pluginBlacklist;
+    mutable std::mutex blacklistMutex;
+    std::mutex pluginLoadMutex; // For safely accessing plugin lists
+    #if JUCE_WINDOWS
+    int x, y;
+    #endif
 
-	class PluginListWindow;
-	std::unique_ptr<PluginListWindow> pluginListWindow;
-    
-    // Enhanced plugin scanning components
-    class SafePluginScanner;
-    friend class SafePluginScanner;
-    class PluginScanDialog;
-    std::unique_ptr<PluginScanDialog> scanDialog;
+    class PluginListWindow;
+    std::unique_ptr<PluginListWindow> pluginListWindow;
 };
 
 #endif /* IconMenu_hpp */
