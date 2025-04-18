@@ -26,20 +26,20 @@
                        headerPath="" cppLanguageStandard="c++11" cppLibType="libc++"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib\juce"/>
-        <MODULEPATH id="juce_opengl" path="lib\juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib\juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib\juce"/>
-        <MODULEPATH id="juce_graphics" path="lib\juce"/>
-        <MODULEPATH id="juce_events" path="lib\juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib\juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib\juce"/>
-        <MODULEPATH id="juce_core" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib\juce"/>
+        <MODULEPATH id="juce_video" path="lib/juce"/>
+        <MODULEPATH id="juce_opengl" path="lib/juce"/>
+        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
+        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_graphics" path="lib/juce"/>
+        <MODULEPATH id="juce_events" path="lib/juce"/>
+        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
+        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
+        <MODULEPATH id="juce_core" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
       </MODULEPATHS>
     </XCODE_MAC>
     <VS2022 targetFolder="Builds/VisualStudio2022" vstFolder="" vst3Folder=""
@@ -53,20 +53,20 @@
                      fastMath="1" linkTimeOptimisation="1" useRuntimeLibDLL="0"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib\juce"/>
-        <MODULEPATH id="juce_opengl" path="lib\juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib\juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib\juce"/>
-        <MODULEPATH id="juce_graphics" path="lib\juce"/>
-        <MODULEPATH id="juce_events" path="lib\juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib\juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib\juce"/>
-        <MODULEPATH id="juce_core" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib\juce"/>
+        <MODULEPATH id="juce_video" path="lib/juce"/>
+        <MODULEPATH id="juce_opengl" path="lib/juce"/>
+        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
+        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_graphics" path="lib/juce"/>
+        <MODULEPATH id="juce_events" path="lib/juce"/>
+        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
+        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
+        <MODULEPATH id="juce_core" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
       </MODULEPATHS>
     </VS2022>
     <VS2015 targetFolder="Builds/VisualStudio2015" vstFolder="" vst3Folder=""
@@ -78,20 +78,20 @@
                        isDebug="0" optimisation="3" targetName="Light Host"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="lib\juce"/>
-        <MODULEPATH id="juce_opengl" path="lib\juce"/>
-        <MODULEPATH id="juce_gui_extra" path="lib\juce"/>
-        <MODULEPATH id="juce_gui_basics" path="lib\juce"/>
-        <MODULEPATH id="juce_graphics" path="lib\juce"/>
-        <MODULEPATH id="juce_events" path="lib\juce"/>
-        <MODULEPATH id="juce_data_structures" path="lib\juce"/>
-        <MODULEPATH id="juce_cryptography" path="lib\juce"/>
-        <MODULEPATH id="juce_core" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_utils" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_processors" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_formats" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_devices" path="lib\juce"/>
-        <MODULEPATH id="juce_audio_basics" path="lib\juce"/>
+        <MODULEPATH id="juce_video" path="lib/juce"/>
+        <MODULEPATH id="juce_opengl" path="lib/juce"/>
+        <MODULEPATH id="juce_gui_extra" path="lib/juce"/>
+        <MODULEPATH id="juce_gui_basics" path="lib/juce"/>
+        <MODULEPATH id="juce_graphics" path="lib/juce"/>
+        <MODULEPATH id="juce_events" path="lib/juce"/>
+        <MODULEPATH id="juce_data_structures" path="lib/juce"/>
+        <MODULEPATH id="juce_cryptography" path="lib/juce"/>
+        <MODULEPATH id="juce_core" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_utils" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_processors" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_formats" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_devices" path="lib/juce"/>
+        <MODULEPATH id="juce_audio_basics" path="lib/juce"/>
       </MODULEPATHS>
     </VS2015>
     <CODEBLOCKS_LINUX targetFolder="Builds/CodeBlocksLinux" vstFolder="" vst3Folder=""
@@ -165,7 +165,9 @@
                JUCE_USE_CDBURNER="disabled" JUCE_USE_CDREADER="disabled" JUCE_USE_CAMERA="disabled"
                JUCE_PLUGINHOST_VST="enabled" JUCE_PLUGINHOST_AU="enabled" JUCE_WEB_BROWSER="disabled"
                JUCE_PLUGINHOST_VST3="enabled" JUCE_ASIO="enabled" JUCE_WASAPI_EXCLUSIVE="enabled"
-               JUCE_DIRECTSOUND_PREFERRED_BIT_DEPTH="32"/>
+               JUCE_DIRECTSOUND_PREFERRED_BIT_DEPTH="32" JUCE_PLUGINHOST_LADSPA="enabled"
+               JUCE_PLUGINHOST_LV2="enabled" JUCE_PLUGINHOST_AAX="enabled" JUCE_PLUGINHOST_ARA="enabled"
+               JUCE_PLUGINHOST_AU_AIRMUSIC="enabled"/>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="1"/>
     <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="1"/>

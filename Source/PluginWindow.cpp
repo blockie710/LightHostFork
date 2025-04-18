@@ -16,8 +16,22 @@ PluginWindow::PluginWindow (Component* const pluginEditor,
     setUsingNativeTitleBar(true);
     setContentOwned (pluginEditor, true);
 
-    setTopLeftPosition (owner->properties.getWithDefault (getLastXProp (type), Random::getSystemRandom().nextInt (500)),
-                        owner->properties.getWithDefault (getLastYProp (type), Random::getSystemRandom().nextInt (500)));
+    #if JUCE_WINDOWS
+    // Improve positioning on Windows 11
+    int defaultX = Random::getSystemRandom().nextInt (500);
+    int defaultY = Random::getSystemRandom().nextInt (500);
+    
+    // Ensure window is visible on screen (Windows 11 has multiple virtual desktops)
+    Rectangle<int> screenArea = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+    defaultX = jmin(screenArea.getWidth() - 400, defaultX);
+    defaultY = jmin(screenArea.getHeight() - 300, defaultY);
+    #else
+    int defaultX = Random::getSystemRandom().nextInt (500);
+    int defaultY = Random::getSystemRandom().nextInt (500);
+    #endif
+
+    setTopLeftPosition (owner->properties.getWithDefault (getLastXProp (type), defaultX),
+                        owner->properties.getWithDefault (getLastYProp (type), defaultY));
 
     owner->properties.set (getOpenProp (type), true);
 

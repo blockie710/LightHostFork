@@ -26,10 +26,20 @@ public:
 		const File deadMansPedalFile(getAppProperties().getUserSettings()
 			->getFile().getSiblingFile("RecentlyCrashedPluginsList"));
 
-		setContentOwned(new PluginListComponent(pluginFormatManager,
+		// Create a custom PluginListComponent that uses our safe scanning method
+		PluginListComponent* listComponent = new PluginListComponent(pluginFormatManager,
 			owner.knownPluginList,
 			deadMansPedalFile,
-			getAppProperties().getUserSettings()), true);
+			getAppProperties().getUserSettings());
+
+		// Modify the default scanner with our own safe scanner
+		listComponent->setCustomScanner([this](AudioPluginFormat* format) {
+			String formatName = format->getName();
+			owner.safePluginScan(format, formatName);
+			return true; // we've handled the scanning
+		});
+
+		setContentOwned(listComponent, true);
 
 		setUsingNativeTitleBar(true);
 		setResizable(true, false);
@@ -62,8 +72,48 @@ private:
 
 IconMenu::IconMenu() : INDEX_EDIT(1000000), INDEX_BYPASS(2000000), INDEX_DELETE(3000000), INDEX_MOVE_UP(4000000), INDEX_MOVE_DOWN(5000000)
 {
-    // Initiialization
-    formatManager.addDefaultFormats();
+    // Initialization with explicit format registration rather than just defaults
+    // This ensures all available plugin formats are supported
+    #if JUCE_PLUGINHOST_VST
+    formatManager.addFormat(new VSTPluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_VST3
+    formatManager.addFormat(new VST3PluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_AU
+    formatManager.addFormat(new AudioUnitPluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_LADSPA
+    formatManager.addFormat(new LADSPAPluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_LV2
+    formatManager.addFormat(new LV2PluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_AAX
+    formatManager.addFormat(new AAXPluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_ARA
+    formatManager.addFormat(new ARAPluginFormat());
+    #endif
+    
+    #if JUCE_PLUGINHOST_AU_AIRMUSIC
+    formatManager.addFormat(new AudioUnitv3PluginFormat());
+    #endif
+
+    // Add Universal Audio Apollo plugin support
+    #if JUCE_PLUGINHOST_UAD
+    formatManager.addFormat(new UADPluginFormat());
+    #endif
+
+    // Load blacklisted plugins if available
+    loadPluginBlacklist();
+
 	#if JUCE_WINDOWS
 	x = y = 0;
 	#endif
@@ -144,11 +194,33 @@ void IconMenu::loadActivePlugins()
         PluginDescription plugin = getNextPluginOlderThanTime(pluginTime);
         String errorMessage;
         AudioPluginInstance* instance = formatManager.createPluginInstance(plugin, graph.getSampleRate(), graph.getBlockSize(), errorMessage);
+        
+        // Check if the plugin instance was created successfully
+        if (instance == nullptr)
+        {
+            // Log the error and continue with the next plugin
+            std::cerr << "Failed to create plugin instance for " << plugin.name << ": " << errorMessage << std::endl;
+            continue;
+        }
+        
 		String pluginUid = getKey("state", plugin);
         String savedPluginState = getAppProperties().getUserSettings()->getValue(pluginUid);
         MemoryBlock savedPluginBinary;
-        savedPluginBinary.fromBase64Encoding(savedPluginState);
-        instance->setStateInformation(savedPluginBinary.getData(), savedPluginBinary.getSize());
+        
+        // Only try to restore state if we have valid data
+        if (savedPluginState.isNotEmpty() && savedPluginBinary.fromBase64Encoding(savedPluginState))
+        {
+            // Protect against corrupt state data
+            try
+            {
+                instance->setStateInformation(savedPluginBinary.getData(), savedPluginBinary.getSize());
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << "Error loading state for plugin " << plugin.name << ": " << e.what() << std::endl;
+            }
+        }
+        
         graph.addNode(instance, i);
 		String key = getKey("bypass", plugin);
 		bool bypass = getAppProperties().getUserSettings()->getBoolValue(key, false);
@@ -181,19 +253,35 @@ PluginDescription IconMenu::getNextPluginOlderThanTime(int &time)
 	int timeStatic = time;
 	PluginDescription closest;
 	int diff = INT_MAX;
+	bool found = false;
+	
 	for (int i = 0; i < activePluginList.getNumTypes(); i++)
 	{
 		PluginDescription plugin = *activePluginList.getType(i);
 		String key = getKey("order", plugin);
 		String pluginTimeString = getAppProperties().getUserSettings()->getValue(key);
+		
+		// Handle case where the value doesn't exist or isn't a number
+		if (pluginTimeString.isEmpty())
+			continue;
+			
 		int pluginTime = atoi(pluginTimeString.toStdString().c_str());
 		if (pluginTime > timeStatic && abs(timeStatic - pluginTime) < diff)
 		{
 			diff = abs(timeStatic - pluginTime);
 			closest = plugin;
 			time = pluginTime;
+			found = true;
 		}
 	}
+	
+	if (!found && activePluginList.getNumTypes() > 0)
+	{
+		// If no plugin with a time greater than timeStatic was found, 
+		// return the first plugin as a fallback
+		closest = *activePluginList.getType(0);
+	}
+	
 	return closest;
 }
 
@@ -359,8 +447,8 @@ void IconMenu::menuInvocationCallback(int id, IconMenu* im)
 			int index = id - im->INDEX_DELETE;
 			std::vector<PluginDescription> timeSorted = im->getTimeSortedList();
 			String key = getKey("order", timeSorted[index]);
-			int unsortedIndex = 0;
-			for (int i = 0; im->activePluginList.getNumTypes(); i++)
+			int unsortedIndex = -1;
+			for (int i = 0; i < im->activePluginList.getNumTypes(); i++)
 			{
 				PluginDescription current = *im->activePluginList.getType(i);
 				if (key.equalsIgnoreCase(getKey("order", current)))
@@ -369,19 +457,23 @@ void IconMenu::menuInvocationCallback(int id, IconMenu* im)
 					break;
 				}
 			}
+            
+            // Fix the infinite loop bug by checking if we found a matching index
+            if (unsortedIndex >= 0 && unsortedIndex < im->activePluginList.getNumTypes())
+            {
+                // Remove plugin order
+                getAppProperties().getUserSettings()->removeValue(key);
+                // Remove bypass entry
+                getAppProperties().getUserSettings()->removeValue(getKey("bypass", timeSorted[index]));
+                getAppProperties().saveIfNeeded();
+                
+                // Remove plugin from list
+                im->activePluginList.removeType(unsortedIndex);
 
-			// Remove plugin order
-			getAppProperties().getUserSettings()->removeValue(key);
-			// Remove bypass entry
-			getAppProperties().getUserSettings()->removeValue(getKey("bypass", timeSorted[index]));
-			getAppProperties().saveIfNeeded();
-			
-			// Remove plugin from list
-            im->activePluginList.removeType(unsortedIndex);
-
-			// Save current states
-			im->savePluginStates();
-			im->loadActivePlugins();
+                // Save current states
+                im->savePluginStates();
+                im->loadActivePlugins();
+            }
         }
         // Add plugin
         else if (im->knownPluginList.getIndexChosenByMenu(id) > -1)
@@ -423,13 +515,24 @@ void IconMenu::menuInvocationCallback(int id, IconMenu* im)
 		{
 			im->savePluginStates();
 			std::vector<PluginDescription> timeSorted = im->getTimeSortedList();
-			PluginDescription toMove = timeSorted[id - im->INDEX_MOVE_UP];
-			for (int i = 0; i < timeSorted.size(); i++)
+			
+			// Verify the index is valid and not already at the top
+			int index = id - im->INDEX_MOVE_UP;
+			if (index > 0 && index < timeSorted.size())
 			{
-				bool move = getKey("move", toMove).equalsIgnoreCase(getKey("move", timeSorted[i]));
-				getAppProperties().getUserSettings()->setValue(getKey("order", timeSorted[i]), move ? i : i+1);
-				if (move)
-					getAppProperties().getUserSettings()->setValue(getKey("order", timeSorted[i-1]), i+1);
+				PluginDescription pluginToMove = timeSorted[index];
+				PluginDescription pluginAbove = timeSorted[index - 1];
+				
+				// Swap the order values
+				String keyToMove = getKey("order", pluginToMove);
+				String keyAbove = getKey("order", pluginAbove);
+				
+				String valueToMove = getAppProperties().getUserSettings()->getValue(keyToMove);
+				String valueAbove = getAppProperties().getUserSettings()->getValue(keyAbove);
+				
+				getAppProperties().getUserSettings()->setValue(keyToMove, valueAbove);
+				getAppProperties().getUserSettings()->setValue(keyAbove, valueToMove);
+				getAppProperties().getUserSettings()->saveIfNeeded();
 			}
 			im->loadActivePlugins();
 		}
@@ -438,16 +541,24 @@ void IconMenu::menuInvocationCallback(int id, IconMenu* im)
 		{
 			im->savePluginStates();
 			std::vector<PluginDescription> timeSorted = im->getTimeSortedList();
-			PluginDescription toMove = timeSorted[id - im->INDEX_MOVE_DOWN];
-			for (int i = 0; i < timeSorted.size(); i++)
+			
+			// Verify the index is valid and not already at the bottom
+			int index = id - im->INDEX_MOVE_DOWN;
+			if (index >= 0 && index < timeSorted.size() - 1)
 			{
-				bool move = getKey("move", toMove).equalsIgnoreCase(getKey("move", timeSorted[i]));
-				getAppProperties().getUserSettings()->setValue(getKey("order", timeSorted[i]), move ? i+2 : i+1);
-				if (move)
-				{
-					getAppProperties().getUserSettings()->setValue(getKey("order", timeSorted[i + 1]), i + 1);
-					i++;
-				}
+				PluginDescription pluginToMove = timeSorted[index];
+				PluginDescription pluginBelow = timeSorted[index + 1];
+				
+				// Swap the order values
+				String keyToMove = getKey("order", pluginToMove);
+				String keyBelow = getKey("order", pluginBelow);
+				
+				String valueToMove = getAppProperties().getUserSettings()->getValue(keyToMove);
+				String valueBelow = getAppProperties().getUserSettings()->getValue(keyBelow);
+				
+				getAppProperties().getUserSettings()->setValue(keyToMove, valueBelow);
+				getAppProperties().getUserSettings()->setValue(keyBelow, valueToMove);
+				getAppProperties().getUserSettings()->saveIfNeeded();
 			}
 			im->loadActivePlugins();
 		}
@@ -540,4 +651,289 @@ void IconMenu::removePluginsLackingInputOutput()
 	}
 	for (int i = 0; i < removeIndex.size(); i++)
 		knownPluginList.removeType(removeIndex[i] - i);
+}
+
+// Plugin blacklist management and safe scanning functions
+
+void IconMenu::loadPluginBlacklist()
+{
+    std::lock_guard<std::mutex> lock(blacklistMutex);
+    pluginBlacklist.clear();
+    
+    // Load blacklisted plugins from user settings
+    String blacklistStr = getAppProperties().getUserSettings()->getValue("pluginBlacklist", "");
+    if (blacklistStr.isNotEmpty())
+    {
+        StringArray tokens;
+        tokens.addTokens(blacklistStr, "|", "");
+        pluginBlacklist = tokens;
+    }
+}
+
+void IconMenu::savePluginBlacklist()
+{
+    std::lock_guard<std::mutex> lock(blacklistMutex);
+    String blacklistStr = pluginBlacklist.joinIntoString("|");
+    getAppProperties().getUserSettings()->setValue("pluginBlacklist", blacklistStr);
+    getAppProperties().getUserSettings()->saveIfNeeded();
+}
+
+void IconMenu::blacklistPlugin(const PluginDescription& plugin)
+{
+    // Create a unique ID for the plugin that combines all relevant info
+    String pluginId = plugin.pluginFormatName + ":" + plugin.fileOrIdentifier;
+    
+    {
+        std::lock_guard<std::mutex> lock(blacklistMutex);
+        if (!isPluginBlacklisted(pluginId))
+        {
+            pluginBlacklist.add(pluginId);
+        }
+        else
+        {
+            return; // Already blacklisted, no need to continue
+        }
+    }
+    
+    savePluginBlacklist();
+    
+    // Also remove it from the known plugins list if it's there
+    for (int i = 0; i < knownPluginList.getNumTypes(); ++i)
+    {
+        PluginDescription* desc = knownPluginList.getType(i);
+        String currentId = desc->pluginFormatName + ":" + desc->fileOrIdentifier;
+        
+        if (currentId == pluginId)
+        {
+            knownPluginList.removeType(i);
+            break;
+        }
+    }
+}
+
+bool IconMenu::isPluginBlacklisted(const String& pluginId) const
+{
+    std::lock_guard<std::mutex> lock(blacklistMutex);
+    return pluginBlacklist.contains(pluginId);
+}
+
+// Custom dialog to show progress during plugin scanning with option to blacklist problematic plugins
+class IconMenu::PluginScanDialog : public ThreadWithProgressWindow
+{
+public:
+    PluginScanDialog(const String& formatName, IconMenu& owner)
+        : ThreadWithProgressWindow("Scanning for " + formatName + " plugins...", 
+                                  true, // can be canceled
+                                  true), // catch exceptions
+          owner(owner),
+          numFound(0),
+          currentPlugin(""),
+          scanTimedOut(false),
+          lastPluginSuccessful(true)
+    {
+    }
+    
+    void run() override
+    {
+        numFound = 0;
+        lastPluginSuccessful = true;
+        
+        // Use appropriate default paths for the OS
+        StringArray defaultPaths;
+        
+        #if JUCE_WINDOWS
+        defaultPaths.add("C:\\Program Files\\Common Files\\VST3");
+        defaultPaths.add("C:\\Program Files\\Common Files\\VST2");
+        defaultPaths.add("C:\\Program Files\\VSTPlugins");
+        defaultPaths.add("C:\\Program Files\\Steinberg\\VSTPlugins");
+        #elif JUCE_MAC
+        defaultPaths.add("~/Library/Audio/Plug-Ins/Components");
+        defaultPaths.add("~/Library/Audio/Plug-Ins/VST");
+        defaultPaths.add("~/Library/Audio/Plug-Ins/VST3");
+        defaultPaths.add("/Library/Audio/Plug-Ins/Components");
+        defaultPaths.add("/Library/Audio/Plug-Ins/VST");
+        defaultPaths.add("/Library/Audio/Plug-Ins/VST3");
+        #elif JUCE_LINUX
+        // Expand the home directory path properly on Linux
+        const String homeDir = File::getSpecialLocation(File::userHomeDirectory).getFullPathName();
+        defaultPaths.add(homeDir + "/.vst");
+        defaultPaths.add(homeDir + "/.vst3");
+        defaultPaths.add(homeDir + "/.lxvst");
+        defaultPaths.add("/usr/lib/vst");
+        defaultPaths.add("/usr/lib/vst3");
+        defaultPaths.add("/usr/lib/lxvst");
+        defaultPaths.add("/usr/local/lib/vst");
+        defaultPaths.add("/usr/local/lib/vst3");
+        defaultPaths.add("/usr/local/lib/lxvst");
+        defaultPaths.add("/usr/lib/x86_64-linux-gnu/vst");
+        defaultPaths.add("/usr/lib/x86_64-linux-gnu/vst3");
+        #endif
+        
+        // Get user-defined paths from settings
+        String savedPaths = getAppProperties().getUserSettings()->getValue("pluginSearchPaths", "");
+        if (savedPaths.isNotEmpty())
+        {
+            StringArray customPaths;
+            customPaths.addTokens(savedPaths, "|", "");
+            
+            for (int i = 0; i < customPaths.size(); ++i)
+                if (!defaultPaths.contains(customPaths[i]))
+                    defaultPaths.add(customPaths[i]);
+        }
+        
+        for (int pathIndex = 0; pathIndex < defaultPaths.size(); ++pathIndex)
+        {
+            const File path(defaultPaths[pathIndex]);
+            if (!path.exists() || threadShouldExit())
+                continue;
+                
+            setStatusMessage("Scanning: " + path.getFullPathName());
+            
+            FileSearchPath searchPath(path);
+            for (int i = 0; i < owner.formatManager.getNumFormats(); ++i)
+            {
+                AudioPluginFormat* format = owner.formatManager.getFormat(i);
+                if (threadShouldExit())
+                    return;
+                    
+                // Loop through each plugin type supported by this format
+                FileSearchPath formatPath(searchPath);
+                format->findAllTypesForFile(formatPath);
+                    
+                OwnedArray<PluginDescription> found;
+                format->searchPathsForPlugins(formatPath, true, found);
+                
+                for (int j = 0; j < found.size(); ++j)
+                {
+                    if (threadShouldExit())
+                        return;
+                        
+                    PluginDescription* desc = found[j];
+                    
+                    // Check if this plugin is already blacklisted
+                    String pluginId = desc->pluginFormatName + ":" + desc->fileOrIdentifier;
+                    if (owner.isPluginBlacklisted(pluginId))
+                        continue;
+                        
+                    currentPlugin = desc->name;
+                    setStatusMessage("Testing plugin: " + currentPlugin + " (" + desc->pluginFormatName + ")");
+                    
+                    // Use a timeout to detect plugins that hang during scanning
+                    scanTimedOut = false;
+                    lastPluginSuccessful = true;
+                    
+                    // Start the timeout timer
+                    startTimer(5000); // 5 second timeout
+                    
+                    String errorMessage;
+                    
+                    try
+                    {
+                        // This can hang if a plugin is problematic
+                        AudioPluginInstance* instance = owner.formatManager.createPluginInstance(
+                            *desc, 
+                            48000.0, // standard sample rate
+                            1024,    // standard buffer size
+                            errorMessage);
+                            
+                        if (instance != nullptr)
+                        {
+                            // Successfully loaded the plugin
+                            delete instance;
+                            owner.knownPluginList.addType(*desc);
+                            numFound++;
+                        }
+                        else if (errorMessage.isNotEmpty())
+                        {
+                            // Failed to load, but didn't crash
+                            DBG("Failed to load plugin: " + desc->name + " - " + errorMessage);
+                            lastPluginSuccessful = false;
+                        }
+                    }
+                    catch (...)
+                    {
+                        // Plugin crashed during instantiation
+                        DBG("Plugin crashed during scan: " + desc->name);
+                        lastPluginSuccessful = false;
+                    }
+                    
+                    // Stop the timeout timer
+                    stopTimer();
+                    
+                    // Handle the case where the plugin scan timed out
+                    if (scanTimedOut || !lastPluginSuccessful)
+                    {
+                        // Ask user if they want to blacklist the problematic plugin
+                        if (AlertWindow::showOkCancelBox(
+                                AlertWindow::WarningIcon,
+                                "Problem with plugin: " + currentPlugin,
+                                scanTimedOut 
+                                    ? "Plugin scan timed out, this plugin may be causing the application to hang. "
+                                      "Would you like to blacklist this plugin?" 
+                                    : "There was a problem loading this plugin. Would you like to blacklist it?",
+                                "Blacklist",
+                                "Skip"))
+                        {
+                            // Blacklist the plugin
+                            owner.blacklistPlugin(*desc);
+                        }
+                    }
+                    
+                    setProgress((float)j / (float)found.size());
+                }
+            }
+        }
+    }
+    
+    void timerCallback() override
+    {
+        // This gets called if the plugin scan times out
+        scanTimedOut = true;
+        lastPluginSuccessful = false;
+        stopTimer();
+        
+        // Interrupt the thread to handle the timeout
+        signalThreadShouldExit();
+    }
+    
+    int getNumPluginsFound() const { return numFound; }
+    
+private:
+    IconMenu& owner;
+    int numFound;
+    String currentPlugin;
+    bool scanTimedOut;
+    bool lastPluginSuccessful;
+};
+
+void IconMenu::safePluginScan(AudioPluginFormat* format, const String& formatName)
+{
+    if (format == nullptr)
+        return;
+        
+    // Create scan dialog
+    scanDialog = new PluginScanDialog(formatName, *this);
+    
+    // Start scanning
+    if (scanDialog->runThread())
+    {
+        // Scan completed successfully
+        int numFound = scanDialog->getNumPluginsFound();
+        if (numFound > 0)
+        {
+            AlertWindow::showMessageBox(
+                AlertWindow::InfoIcon,
+                "Plugin Scan Complete",
+                String(numFound) + " " + formatName + " plugins were found.");
+        }
+        else
+        {
+            AlertWindow::showMessageBox(
+                AlertWindow::InfoIcon,
+                "Plugin Scan Complete",
+                "No new " + formatName + " plugins were found.");
+        }
+    }
+    
+    scanDialog = nullptr;
 }

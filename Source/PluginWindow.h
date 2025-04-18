@@ -61,4 +61,4 @@ inline String getLastXProp (PluginWindow::WindowFormatType type)    { return "ui
 inline String getLastYProp (PluginWindow::WindowFormatType type)    { return "uiLastY_" + toString (type); }
 inline String getOpenProp  (PluginWindow::WindowFormatType type)    { return "uiopen_"  + toString (type); }
 
-#endif /* PluginWindow_hpp */
+#endif /* PluginWindow_h */

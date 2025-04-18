@@ -9,6 +9,9 @@
 #ifndef IconMenu_hpp
 #define IconMenu_hpp
 
+#include <memory>
+#include <mutex>
+
 ApplicationProperties& getAppProperties();
 
 class IconMenu : public SystemTrayIconComponent, private Timer, public ChangeListener
@@ -37,24 +40,39 @@ private:
 	std::vector<PluginDescription> getTimeSortedList();
 	void setIcon();
     
+    // Plugin blacklisting and safe scanning functionality
+    void loadPluginBlacklist();
+    void savePluginBlacklist();
+    void blacklistPlugin(const PluginDescription& plugin);
+    bool isPluginBlacklisted(const String& pluginId) const;
+    void safePluginScan(AudioPluginFormat* format, const String& formatName);
+    
     AudioDeviceManager deviceManager;
     AudioPluginFormatManager formatManager;
     KnownPluginList knownPluginList;
     KnownPluginList activePluginList;
     KnownPluginList::SortMethod pluginSortMethod;
     PopupMenu menu;
-    ScopedPointer<PluginDirectoryScanner> scanner;
+    std::unique_ptr<PluginDirectoryScanner> scanner;
     bool menuIconLeftClicked;
     AudioProcessorGraph graph;
     AudioProcessorPlayer player;
     AudioProcessorGraph::Node *inputNode;
     AudioProcessorGraph::Node *outputNode;
+    StringArray pluginBlacklist;
+    std::mutex blacklistMutex;
 	#if JUCE_WINDOWS
 	int x, y;
 	#endif
 
 	class PluginListWindow;
-	ScopedPointer<PluginListWindow> pluginListWindow;
+	std::unique_ptr<PluginListWindow> pluginListWindow;
+    
+    // Enhanced plugin scanning components
+    class SafePluginScanner;
+    friend class SafePluginScanner;
+    class PluginScanDialog;
+    std::unique_ptr<PluginScanDialog> scanDialog;
 };
 
 #endif /* IconMenu_hpp */

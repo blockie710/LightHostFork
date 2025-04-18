@@ -13,6 +13,11 @@ public:
 
     void initialise (const String&) override
     {
+        // Enable high-DPI support on Windows 11
+        #if JUCE_WINDOWS
+        Desktop::getInstance().setGlobalScaleFactor(1.0);
+        #endif
+        
         PropertiesFile::Options options;
         options.applicationName     = getApplicationName();
         options.filenameSuffix      = "settings";
