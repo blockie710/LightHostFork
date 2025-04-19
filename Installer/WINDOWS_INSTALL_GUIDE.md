@@ -1,6 +1,6 @@
-# LightHost Windows Installation Guide
+# NovaHost Windows Installation Guide
 
-This guide will help you build and install LightHost on Windows 10 and Windows 11 systems.
+This guide will help you build and install NovaHost on Windows 10 and Windows 11 systems.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ This guide will help you build and install LightHost on Windows 10 and Windows 1
 
 ### Step 1: Generate the Visual Studio project files
 
-1. Open the `LightHost.jucer` file with Projucer
+1. Open the `NovaHost.jucer` file with Projucer
 2. Click on "Save Project and Open in Visual Studio"
 3. This will generate and open the Visual Studio 2022 project
 
@@ -35,13 +35,13 @@ This guide will help you build and install LightHost on Windows 10 and Windows 1
 ### Method 2: Manual compilation
 
 1. Install Inno Setup 6
-2. Open `Installer\LightHostSetup.iss` in Inno Setup
+2. Open `Installer\NovaHostSetup.iss` in Inno Setup
 3. Click Build → Compile
 4. The installer will be created in the `Installer\Output` directory
 
 ## Installation
 
-Run the `LightHostSetup.exe` installer and follow the on-screen instructions:
+Run the `NovaHostSetup.exe` installer and follow the on-screen instructions:
 
 1. Accept the license agreement
 2. Choose installation location
@@ -51,7 +51,7 @@ Run the `LightHostSetup.exe` installer and follow the on-screen instructions:
 
 ## After Installation
 
-LightHost will appear in your system tray when running. Click on the icon to:
+NovaHost will appear in your system tray when running. Click on the icon to:
 
 - Configure audio settings
 - Manage plugins
@@ -66,7 +66,7 @@ LightHost will appear in your system tray when running. Click on the icon to:
 ## Uninstalling
 
 1. Go to Windows Settings → Apps → Apps & features
-2. Find "Light Host" in the list
+2. Find "Nova Host" in the list
 3. Click Uninstall and follow the prompts
 
 ## Building from Source for Windows 7/8

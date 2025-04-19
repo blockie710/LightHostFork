@@ -144,13 +144,7 @@ public:
         return result;
     }
     
-    /**
-     * Returns the number of worker threads in the pool
-     */
-    size_t getThreadCount() const
-    {
-        return workers.size();
-    }
+    // Removed redundant getThreadCount() method
     
     /**
      * Returns the number of worker threads in the pool
@@ -169,10 +163,10 @@ public:
         // Create a special synchronization task
         std::mutex waitMutex;
         std::condition_variable waitCondition;
-        std::atomic<size_t> jobsRemaining{getThreadCount()};
+        std::atomic<size_t> jobsRemaining{getNumThreads()};
         
         // Add a sync task for each thread
-        for (size_t i = 0; i < getThreadCount(); ++i)
+        for (size_t i = 0; i < getNumThreads(); ++i)
         {
             addJob([&waitMutex, &waitCondition, &jobsRemaining]() {
                 // Decrement the counter when the task runs

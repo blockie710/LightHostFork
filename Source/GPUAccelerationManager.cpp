@@ -102,7 +102,8 @@ GPUAccelerationManager::~GPUAccelerationManager()
     {
         if (component != nullptr && context != nullptr)
         {
-            context->detach();
+            if (context->isAttached())
+                context->detach();
         }
     }
     
@@ -185,9 +186,33 @@ void GPUAccelerationManager::applyToComponent(juce::Component* component, bool c
     }
     
     // Make sure component cleans up properly when destroyed
-    component->onComponentDeleted = [this, component]() {
-        removeFromComponent(component);
+    class ComponentCleanupHelper : public juce::ComponentListener
+    {
+    public:
+        ComponentCleanupHelper(GPUAccelerationManager* manager, juce::Component* comp)
+            : owner(manager), component(comp)
+        {
+            component->addComponentListener(this);
+        }
+
+        ~ComponentCleanupHelper() override
+        {
+            if (component != nullptr)
+                component->removeComponentListener(this);
+        }
+
+        void componentBeingDeleted(juce::Component& comp) override
+        {
+            if (owner != nullptr && &comp == component)
+                owner->removeFromComponent(component);
+        }
+
+    private:
+        GPUAccelerationManager* owner;
+        juce::Component* component;
     };
+
+    data.cleanupHelper = std::make_shared<ComponentCleanupHelper>(this, component);
 }
 
 void GPUAccelerationManager::removeFromComponent(juce::Component* component)
@@ -376,20 +401,43 @@ juce::StringArray GPUAccelerationManager::detectAvailableGPUs()
     if (glxinfo.start("glxinfo -B", juce::ChildProcess::wantStdOut))
     {
         juce::String output = glxinfo.readAllProcessOutput();
-        // Parse the output to find GPUs
         
+        if (output.isEmpty())
+        {
+            juce::Logger::writeToLog("glxinfo output is empty. Unable to detect GPUs.");
+            return result;
+        }
+
         juce::StringArray lines;
         lines.addLines(output);
         
         for (const auto& line : lines)
         {
-            if (line.contains("Device:") && !line.contains("Device: Mesa"))
+            if (line.contains("Device:"))
             {
                 juce::String deviceName = line.fromFirstOccurrenceOf("Device:", false, false).trim();
-                if (!deviceName.isEmpty() && !result.contains(deviceName))
+                
+                if (deviceName.isEmpty())
+                {
+                    juce::Logger::writeToLog("Found a 'Device:' line, but the device name is empty.");
+                    continue;
+                }
+                
+                if (!result.contains(deviceName))
+                {
                     result.add(deviceName);
+                }
             }
         }
+
+        if (result.isEmpty())
+        {
+            juce::Logger::writeToLog("No valid GPUs detected from glxinfo output.");
+        }
+    }
+    else
+    {
+        juce::Logger::writeToLog("Failed to execute glxinfo. Ensure it is installed and accessible.");
     }
     #endif
     

@@ -2,6 +2,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_core/juce_core.h>
 #include <BinaryData.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 
 using namespace juce;
 
@@ -149,19 +150,21 @@ void SplashScreen::timerCallback()
         else if (Component* parent = getParentComponent())
         {
             parent->removeChildComponent(this);
-            delete this;
+            if (auto safeThis = WeakReference<Component>(this))
+                safeThis->deleteAfterRemoval();
+        }
+        else
+        else if (Component* parent = getParentComponent())
+        {
+            parent->removeChildComponent(this);
+            if (auto safeThis = WeakReference<Component>(this))
+                Timer::callAfterDelay(50, [safeThis]() { delete safeThis.get(); });
         }
         else
         {
-            delete this;
+            if (auto safeThis = WeakReference<Component>(this))
+                Timer::callAfterDelay(50, [safeThis]() { delete safeThis.get(); });
         }
-        return;
-    }
-    
-    if (elapsedMs > displayTimeMs)
-    {
-        // Fade out phase
-        opacity = 1.0f - (float)(elapsedMs - displayTimeMs) / (float)fadeOutTimeMs;
     }
     
     repaint();
