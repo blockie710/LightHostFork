@@ -4,12 +4,14 @@
  *
  * This file provides a safer way to scan for plugins, preventing crashes from problematic plugins
  * Created April 18, 2025
+ * Updated April 19, 2025 - Added parallel scanning with ThreadPool
  */
 
 #ifndef SAFEPLUGINSCANNER_H_INCLUDED
 #define SAFEPLUGINSCANNER_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "ThreadPool.h"
 
 #include <atomic>
 #include <future>
@@ -86,34 +88,101 @@ public:
         {
             int totalPaths = searchPath.getNumPaths();
             
-            // Set up search parameters
+            // Create a thread pool for parallel scanning
+            // Use a reasonable number of threads - one per CPU core but no more than 8
+            int numThreads = juce::jmin(8, juce::SystemStats::getNumCPUs());
+            ThreadPool scanPool(numThreads);
+            
+            // Progress tracking
+            std::atomic<int> completedPaths(0);
+            std::mutex resultsMutex; // Protects access to the results array
+            
+            // Initial status update
+            juce::String statusMsg = "Scanning " + juce::String(totalPaths) + " paths with " +
+                                    juce::String(numThreads) + " parallel threads";
+            setStatusMessage(statusMsg);
+            updateProgressListener(0.0f, statusMsg);
+            
+            // Create a vector to hold futures for all scan tasks
+            std::vector<std::future<void>> scanTasks;
+            scanTasks.reserve(totalPaths);
+            
+            // Submit search tasks to the thread pool
             for (int i = 0; i < totalPaths; ++i)
             {
                 if (threadShouldExit())
                 {
                     scanCancelled.store(true);
-                    return;
+                    break;
                 }
                 
                 const juce::File& path = searchPath[i];
                 
-                juce::String statusMsg = "Scanning: " + path.getFullPathName();
-                float progress = (float)i / (float)totalPaths * 0.5f;
-                
-                setStatusMessage(statusMsg);
-                setProgress(progress);
-                
-                // Update external progress listener if available
-                updateProgressListener(progress, statusMsg);
-                
                 // Skip scanning of empty or non-existent directories
                 if (!path.exists() || !path.isDirectory() || path.getNumberOfChildFiles(juce::File::findFilesAndDirectories) == 0) 
                 {
+                    // Count this as completed
+                    completedPaths++;
                     continue;
                 }
                 
-                // Use a timeout for each directory search
-                searchSinglePathForPlugins(format, path, results);
+                // Submit task to thread pool
+                auto future = scanPool.addJob(
+                    [this, format, path, &results, &resultsMutex, &completedPaths, totalPaths]() {
+                        // Create a local array to collect results for this path
+                        juce::OwnedArray<juce::PluginDescription> pathResults;
+                        
+                        // Search this path for plugins
+                        searchSinglePathForPlugins(format, path, pathResults);
+                        
+                        // Update progress
+                        int completed = ++completedPaths;
+                        float progress = (float)completed / (float)totalPaths * 0.5f;
+                        
+                        // Update status safely on the message thread
+                        juce::String statusUpdate = "Scanned " + juce::String(completed) + 
+                                                " of " + juce::String(totalPaths) + 
+                                                " paths: " + path.getFileName();
+                        
+                        juce::MessageManager::callAsync([this, progress, statusUpdate]() {
+                            setStatusMessage(statusUpdate);
+                            setProgress(progress);
+                            updateProgressListener(progress, statusUpdate);
+                        });
+                        
+                        // Transfer local results to main result array
+                        if (pathResults.size() > 0)
+                        {
+                            std::lock_guard<std::mutex> lock(resultsMutex);
+                            for (int j = 0; j < pathResults.size(); ++j)
+                            {
+                                // Transfer ownership of each description to the main results array
+                                results.add(pathResults.getUnchecked(j));
+                            }
+                            
+                            // Clear without deleting the transferred objects
+                            pathResults.clearQuick(false);
+                        }
+                    }
+                );
+                
+                scanTasks.push_back(std::move(future));
+            }
+            
+            // Wait for all scan tasks to complete or for cancellation
+            while (completedPaths < totalPaths && !threadShouldExit() && !scanCancelled.load())
+            {
+                // Update progress periodically
+                juce::String statusUpdate = "Scanned " + juce::String(completedPaths.load()) + 
+                                         " of " + juce::String(totalPaths) + " paths";
+                float progress = (float)completedPaths.load() / (float)totalPaths * 0.5f;
+                
+                setStatusMessage(statusUpdate);
+                setProgress(progress);
+                updateProgressListener(progress, statusUpdate);
+                
+                // Small sleep to prevent UI thread hogging
+                juce::Thread::sleep(100);
             }
         }
         catch (const std::exception& e)
@@ -143,115 +212,91 @@ public:
         setStatusMessage(statusMsg);
         updateProgressListener(0.5f, statusMsg);
         
-        for (int i = 0; i < results.size() && !threadShouldExit(); ++i)
+        // Create a thread pool specifically for testing plugins
+        // Use fewer threads for testing to avoid overwhelming the system
+        ThreadPool testPool(juce::jmin(4, juce::SystemStats::getNumCPUs()));
+        
+        std::atomic<int> completedTests(0);
+        std::atomic<int> validTests(0);
+        std::mutex pluginListMutex; // Protects access to the plugin list
+        
+        // Vector to hold futures for plugin test tasks
+        std::vector<std::future<void>> testTasks;
+        testTasks.reserve(results.size());
+        
+        // Submit plugin testing tasks
+        for (int i = 0; i < results.size(); ++i)
         {
-            juce::PluginDescription* desc = results[i];
-            if (desc == nullptr)
-                continue;
-                
-            statusMsg = "Testing plugin: " + desc->name;
-            float progress = 0.5f + ((float)i / (float)results.size() * 0.5f);
+            if (threadShouldExit() || scanCancelled.load())
+                break;
             
-            setStatusMessage(statusMsg);
-            setProgress(progress);
-            updateProgressListener(progress, statusMsg);
+            auto desc = results.getUnchecked(i);
             
-            if (isPluginSafe(*desc))
-            {
-                // Check if this is a new plugin
-                bool isNew = true;
-                for (int j = 0; j < pluginList.getNumTypes(); ++j)
-                {
-                    if (desc->isDuplicateOf(*pluginList.getType(j)))
+            // Submit the plugin test to the thread pool
+            auto future = testPool.addJob(
+                [this, desc, &completedTests, &validTests, &pluginListMutex, totalPlugins = results.size()]() {
+                    bool isValid = isPluginSafe(*desc);
+                    
+                    // Update progress
+                    int completed = ++completedTests;
+                    float progress = 0.5f + ((float)completed / (float)totalPlugins * 0.5f);
+                    
+                    // Update status safely on the message thread
+                    juce::String statusUpdate = "Tested " + juce::String(completed) + 
+                                             " of " + juce::String(totalPlugins) + 
+                                             " plugins: " + desc->name;
+                    
+                    juce::MessageManager::callAsync([this, progress, statusUpdate]() {
+                        setStatusMessage(statusUpdate);
+                        setProgress(progress);
+                        updateProgressListener(progress, statusUpdate);
+                    });
+                    
+                    if (isValid)
                     {
-                        isNew = false;
-                        break;
+                        // Add valid plugin to the list safely
+                        std::lock_guard<std::mutex> lock(pluginListMutex);
+                        pluginList.addType(*desc);
+                        validTests++;
+                        numFound++;
+                    }
+                    else
+                    {
+                        // Handle plugin load failure
+                        handlePluginLoadFailure(*desc);
                     }
                 }
-                
-                if (isNew)
-                {
-                    pluginList.addType(*desc);
-                    numFound++;
-                }
-                
-                validPluginCount++;
-            }
-            else if (!threadShouldExit() && !scanCancelled.load())
-            {
-                handlePluginLoadFailure(*desc);
-            }
-        }
-        
-        if (validPluginCount == 0 && results.size() > 0 && !scanCancelled.load())
-        {
-            statusMsg = "No valid plugins found";
-            setStatusMessage(statusMsg);
-            updateProgressListener(1.0f, statusMsg);
-        }
-        else
-        {
-            statusMsg = juce::String(numFound) + " new plugins found";
-            setStatusMessage(statusMsg);
-            updateProgressListener(1.0f, statusMsg);
-        }
-    }
-    
-    int getNumPluginsFound() const { return numFound; }
-    bool didScanTimeout() const { return scanTimedOut; }
-    bool wasScanCancelled() const { return scanCancelled.load(); }
-    
-private:
-    void updateProgressListener(float progress, const juce::String& statusMessage)
-    {
-        if (progressListener != nullptr)
-            progressListener->onScanProgressUpdate(progress, statusMessage);
-    }
-    
-    juce::FileSearchPath getPluginSearchPaths()
-    {
-        juce::FileSearchPath searchPath;
-        
-        // Add default search paths based on OS
-        #if JUCE_WINDOWS
-        searchPath.addPath(juce::File("C:\\Program Files\\Common Files\\VST3"));
-        searchPath.addPath(juce::File("C:\\Program Files\\Common Files\\VST2"));
-        searchPath.addPath(juce::File("C:\\Program Files\\VSTPlugins"));
-        searchPath.addPath(juce::File("C:\\Program Files\\Steinberg\\VSTPlugins"));
-        searchPath.addPath(juce::File("C:\\Program Files (x86)\\Common Files\\VST3"));
-        searchPath.addPath(juce::File("C:\\Program Files (x86)\\Common Files\\VST2"));
-        searchPath.addPath(juce::File("C:\\Program Files (x86)\\VSTPlugins"));
-        searchPath.addPath(juce::File("C:\\Program Files (x86)\\Steinberg\\VSTPlugins"));
-        #elif JUCE_MAC
-        searchPath.addPath(juce::File("~/Library/Audio/Plug-Ins/Components"));
-        searchPath.addPath(juce::File("~/Library/Audio/Plug-Ins/VST"));
-        searchPath.addPath(juce::File("~/Library/Audio/Plug-Ins/VST3"));
-        searchPath.addPath(juce::File("/Library/Audio/Plug-Ins/Components"));
-        searchPath.addPath(juce::File("/Library/Audio/Plug-Ins/VST"));
-        searchPath.addPath(juce::File("/Library/Audio/Plug-Ins/VST3"));
-        #elif JUCE_LINUX
-        const juce::File homeDir(juce::File::getSpecialLocation(juce::File::userHomeDirectory));
-        searchPath.addPath(homeDir.getChildFile(".vst"));
-        searchPath.addPath(homeDir.getChildFile(".vst3"));
-        searchPath.addPath(homeDir.getChildFile(".lxvst"));
-        searchPath.addPath(juce::File("/usr/lib/vst"));
-        searchPath.addPath(juce::File("/usr/lib/vst3"));
-        searchPath.addPath(juce::File("/usr/lib/lxvst"));
-        searchPath.addPath(juce::File("/usr/local/lib/vst"));
-        searchPath.addPath(juce::File("/usr/local/lib/vst3"));
-        searchPath.addPath(juce::File("/usr/local/lib/lxvst"));
-        #endif
-        
-        // Add user paths from settings
-        juce::StringArray userPaths;
-        userPaths.addTokens(juce::JUCEApplication::getInstance()->getGlobalProperties().getUserSettings()->getValue("pluginSearchPaths", ""), "|", "");
-        for (int i = 0; i < userPaths.size(); ++i)
-        {
-            if (userPaths[i].isNotEmpty())
-                searchPath.addPath(juce::File(userPaths[i]));
-        }
+            );
             
-        return searchPath;
+            testTasks.push_back(std::move(future));
+        }
+        
+        // Wait for all plugin tests to complete or for cancellation
+        int totalPlugins = results.size();
+        while (completedTests < totalPlugins && !threadShouldExit() && !scanCancelled.load())
+        {
+            // Update progress periodically
+            juce::String statusUpdate = "Tested " + juce::String(completedTests.load()) + 
+                                     " of " + juce::String(totalPlugins) + 
+                                     " plugins (" + juce::String(validTests.load()) + " valid)";
+            float progress = 0.5f + ((float)completedTests.load() / (float)totalPlugins * 0.5f);
+            
+            setStatusMessage(statusUpdate);
+            setProgress(progress);
+            updateProgressListener(progress, statusUpdate);
+            
+            // Small sleep to prevent UI thread hogging
+            juce::Thread::sleep(100);
+        }
+        
+        // Final status update
+        if (!threadShouldExit() && !scanCancelled.load())
+        {
+            juce::String finalStatus = "Scan complete: Found " + juce::String(numFound) + " " + formatName + " plugins";
+            setStatusMessage(finalStatus);
+            setProgress(1.0f);
+            updateProgressListener(1.0f, finalStatus);
+        }
     }
     
     void searchSinglePathForPlugins(juce::AudioPluginFormat* format, const juce::File& path, juce::OwnedArray<juce::PluginDescription>& results)
@@ -467,6 +512,56 @@ private:
                 juce::JUCEApplication::getInstance()->getGlobalProperties()->getUserSettings()->saveIfNeeded();
             }
         }
+    }
+
+private:
+    void updateProgressListener(float progress, const juce::String& message)
+    {
+        if (progressListener != nullptr)
+        {
+            progressListener->onScanProgressUpdate(progress, message);
+        }
+    }
+
+    juce::FileSearchPath getPluginSearchPaths()
+    {
+        juce::FileSearchPath searchPath;
+        
+        // Add standard paths based on platform
+        #if JUCE_WINDOWS
+        searchPath.addPath(juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory).getChildFile("VST3"));
+        searchPath.addPath(juce::File("C:\\Program Files\\Common Files\\VST3"));
+        searchPath.addPath(juce::File("C:\\Program Files\\Common Files\\VST2"));
+        searchPath.addPath(juce::File("C:\\Program Files\\VSTPlugins"));
+        searchPath.addPath(juce::File("C:\\Program Files\\Steinberg\\VSTPlugins"));
+        #elif JUCE_MAC
+        searchPath.addPath(juce::File("~/Library/Audio/Plug-Ins/VST3"));
+        searchPath.addPath(juce::File("/Library/Audio/Plug-Ins/Components"));
+        searchPath.addPath(juce::File("/Library/Audio/Plug-Ins/VST"));
+        searchPath.addPath(juce::File("/Library/Audio/Plug-Ins/VST3"));
+        #elif JUCE_LINUX
+        const juce::File homeDir(juce::File::getSpecialLocation(juce::File::userHomeDirectory));
+        searchPath.addPath(homeDir.getChildFile(".vst"));
+        searchPath.addPath(homeDir.getChildFile(".vst3"));
+        searchPath.addPath(homeDir.getChildFile(".lxvst"));
+        searchPath.addPath(juce::File("/usr/lib/vst"));
+        searchPath.addPath(juce::File("/usr/lib/vst3"));
+        searchPath.addPath(juce::File("/usr/lib/lxvst"));
+        searchPath.addPath(juce::File("/usr/local/lib/vst"));
+        searchPath.addPath(juce::File("/usr/local/lib/vst3"));
+        searchPath.addPath(juce::File("/usr/local/lib/lxvst"));
+        #endif
+        
+        // Add user paths from settings
+        juce::StringArray userPaths;
+        userPaths.addTokens(juce::JUCEApplication::getInstance()->getGlobalProperties().getUserSettings()->getValue("pluginSearchPaths", ""), "|", "");
+        for (int i = 0; i < userPaths.size(); ++i)
+        {
+            if (userPaths[i].isNotEmpty())
+                searchPath.addPath(juce::File(userPaths[i]));
+        }
+            
+        return searchPath;
     }
 
     juce::AudioPluginFormatManager& formatManager;
