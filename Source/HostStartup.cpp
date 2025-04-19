@@ -72,7 +72,7 @@ public:
 
 private:
     std::unique_ptr<IconMenu> mainWindow;
-    DialogWindow* splashWindow = nullptr;
+    std::unique_ptr<DialogWindow> splashWindow;
     
     // Initialize GPU acceleration for the application
     void initializeGPUAcceleration()
@@ -108,7 +108,7 @@ private:
     // Show a splash screen with version and build information
     void showSplashScreen()
     {
-        splashWindow = new DialogWindow("Loading Nova Host", 
+        splashWindow = std::make_unique<DialogWindow>("Loading Nova Host", 
                                       Colours::transparentBlack, 
                                       true, 
                                       false);
@@ -121,8 +121,14 @@ private:
         splashWindow->setVisible(true);
         splashWindow->toFront(true);
         
-        // The SplashScreen component will delete itself when done
-        // and also close the splashWindow that owns it
+        // The SplashScreen component will manage its own lifecycle
+        // and signal when it's done so we can clean up the window
+        content->setOnCloseCallback([this]() {
+            // Clean up splash window safely on the message thread
+            juce::MessageManager::callAsync([this]() {
+                splashWindow = nullptr;
+            });
+        });
     }
 
     StringArray getParameter(String lookFor) {

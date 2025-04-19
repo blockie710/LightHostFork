@@ -12,6 +12,9 @@ class SplashScreen : public juce::Component,
                      public PluginScanProgressListener
 {
 public:
+    // Define a callback type for notifying when the splash screen should close
+    using CloseCallback = std::function<void()>;
+    
     SplashScreen();
     ~SplashScreen() override;
 
@@ -27,6 +30,9 @@ public:
     /** Set the status message shown during loading */
     void setStatusMessage(const juce::String& message) { statusMessage = message; repaint(); }
     
+    /** Set a callback to be invoked when the splash screen is closing */
+    void setOnCloseCallback(CloseCallback callback) { onCloseCallback = std::move(callback); }
+    
 private:
     juce::Image logoImage;
     juce::String versionString;
@@ -37,6 +43,7 @@ private:
     int fadeOutTimeMs;
     juce::uint32 startTime;
     float opacity;
+    CloseCallback onCloseCallback;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SplashScreen)
 };

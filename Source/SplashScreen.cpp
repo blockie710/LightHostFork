@@ -133,6 +133,10 @@ void SplashScreen::timerCallback()
         // Time to close
         stopTimer();
         
+        // Invoke close callback if it exists
+        if (onCloseCallback)
+            onCloseCallback();
+        
         // Find and close the parent dialog window if it exists
         if (DialogWindow* dialogWindow = dynamic_cast<DialogWindow*>(getParentComponent()))
         {

@@ -45,7 +45,6 @@ public:
           scanTimedOut(false),
           numFound(0),
           scanCancelled(false),
-          progressListener(nullptr),
           searchPath(getPluginSearchPaths()),
           lastProgressUpdateTime(std::chrono::steady_clock::now())
     {
@@ -58,6 +57,15 @@ public:
         std::lock_guard<std::mutex> lock(progressListenerMutex);
         progressListener = listener;
     }
+    
+    // Check if scan timed out
+    bool didScanTimeout() const { return scanTimedOut; }
+    
+    // Check if scan was cancelled by user
+    bool wasScanCancelled() const { return scanCancelled.load(); }
+    
+    // Get the number of valid plugins found
+    int getNumPluginsFound() const { return numFound; }
     
     void run() override
     {
