@@ -157,10 +157,6 @@
       <FILE id="pzKV1s" name="IconMenu.hpp" compile="0" resource="0" file="Source/IconMenu.hpp"/>
       <FILE id="K58fGt" name="SafePluginScanner.h" compile="0" resource="0"
             file="Source/SafePluginScanner.h"/>
-      <FILE id="Xm8fTp" name="SplashScreen.cpp" compile="1" resource="0"
-            file="Source/SplashScreen.cpp"/>
-      <FILE id="T5nPwR" name="SplashScreen.h" compile="0" resource="0"
-            file="Source/SplashScreen.h"/>
     </GROUP>
     <GROUP id="{B6DF5A1E-D458-C20A-CD4E-C679E4461593}" name="Resources">
       <FILE id="kxxp8K" name="icon.png" compile="0" resource="1" file="Resources/icon.png"/>

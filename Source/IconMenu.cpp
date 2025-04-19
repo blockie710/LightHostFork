@@ -13,26 +13,20 @@
 #include "SplashScreen.h"
 #include <ctime>
 #include <limits>
+#include <climits> // For INT_MAX
 #if JUCE_WINDOWS
 #include <Windows.h>
 #endif
 
-// Making sure to be explicit about using JUCE namespaces
-using juce::String;
-using juce::PluginDescription;
-using juce::AudioProcessorGraph;
-using juce::DocumentWindow;
-using juce::XmlElement;
-using juce::Colour;
-using juce::Colours;
-using juce::MemoryBlock;
+// All JUCE class references need juce:: prefix for proper namespace resolution
+// Instead of using declarations, we'll use fully qualified names
 
-class IconMenu::PluginListWindow : public DocumentWindow
+class IconMenu::PluginListWindow : public juce::DocumentWindow
 {
 public:
     PluginListWindow(IconMenu& owner_, juce::AudioPluginFormatManager& pluginFormatManager)
-        : DocumentWindow("Available Plugins", Colours::white,
-            DocumentWindow::minimiseButton | DocumentWindow::closeButton),
+        : juce::DocumentWindow("Available Plugins", juce::Colours::white,
+            juce::DocumentWindow::minimiseButton | juce::DocumentWindow::closeButton),
         owner(owner_)
     {
         const juce::File deadMansPedalFile(getAppProperties().getUserSettings()
@@ -131,7 +125,7 @@ IconMenu::IconMenu() : INDEX_EDIT(1000000), INDEX_BYPASS(2000000), INDEX_DELETE(
 
 void IconMenu::startAudioDevice()
 {
-    auto savedAudioState = std::unique_ptr<XmlElement>(getAppProperties().getUserSettings()->getXmlValue("audioDeviceState"));
+    auto savedAudioState = std::unique_ptr<juce::XmlElement>(getAppProperties().getUserSettings()->getXmlValue("audioDeviceState"));
     
     // Setup audio with safe defaults first
     const int defaultNumInputChannels = 2;
@@ -151,14 +145,14 @@ void IconMenu::loadAllPluginLists()
     std::unique_lock<std::mutex> lock(pluginLoadMutex);
     
     // Plugins - all available
-    auto savedPluginList = std::unique_ptr<XmlElement>(getAppProperties().getUserSettings()->getXmlValue("pluginList"));
+    auto savedPluginList = std::unique_ptr<juce::XmlElement>(getAppProperties().getUserSettings()->getXmlValue("pluginList"));
     if (savedPluginList != nullptr)
         knownPluginList.recreateFromXml(*savedPluginList);
     pluginSortMethod = juce::KnownPluginList::sortByManufacturer;
     knownPluginList.addChangeListener(this);
     
     // Plugins - active in chain
-    auto savedPluginListActive = std::unique_ptr<XmlElement>(getAppProperties().getUserSettings()->getXmlValue("pluginListActive"));
+    auto savedPluginListActive = std::unique_ptr<juce::XmlElement>(getAppProperties().getUserSettings()->getXmlValue("pluginListActive"));
     if (savedPluginListActive != nullptr)
         activePluginList.recreateFromXml(*savedPluginListActive);
     activePluginList.addChangeListener(this);
@@ -212,17 +206,17 @@ void IconMenu::loadActivePlugins()
     graph.clear();
     
     // Create input/output nodes using proper API for current JUCE version
-    inputNode = graph.addNode(std::make_unique<AudioProcessorGraph::AudioGraphIOProcessor>(
-        AudioProcessorGraph::AudioGraphIOProcessor::audioInputNode)).get();
+    inputNode = graph.addNode(std::make_unique<juce::AudioProcessorGraph::AudioGraphIOProcessor>(
+        juce::AudioProcessorGraph::AudioGraphIOProcessor::audioInputNode)).get();
     
-    outputNode = graph.addNode(std::make_unique<AudioProcessorGraph::AudioGraphIOProcessor>(
-        AudioProcessorGraph::AudioGraphIOProcessor::audioOutputNode)).get();
+    outputNode = graph.addNode(std::make_unique<juce::AudioProcessorGraph::AudioGraphIOProcessor>(
+        juce::AudioProcessorGraph::AudioGraphIOProcessor::audioOutputNode)).get();
     
     // Default passthrough connection when no plugins are active
     if (activePluginList.getNumTypes() == 0)
     {
-        graph.addConnection({ { inputNode->nodeID, CHANNEL_ONE }, { outputNode->nodeID, CHANNEL_ONE } });
-        graph.addConnection({ { inputNode->nodeID, CHANNEL_TWO }, { outputNode->nodeID, CHANNEL_TWO } });
+        graph.addConnection({{ inputNode->nodeID, CHANNEL_ONE }, { outputNode->nodeID, CHANNEL_ONE }});
+        graph.addConnection({{ inputNode->nodeID, CHANNEL_TWO }, { outputNode->nodeID, CHANNEL_TWO }});
         return;
     }
     
@@ -230,7 +224,7 @@ void IconMenu::loadActivePlugins()
     std::lock_guard<std::mutex> lock(pluginLoadMutex);
     
     struct PluginLoadJob {
-        PluginDescription plugin;
+        juce::PluginDescription plugin;
         juce::String stateKey;
         int nodeId;
         bool bypass;
@@ -242,7 +236,7 @@ void IconMenu::loadActivePlugins()
     
     for (int i = 1; i <= activePluginList.getNumTypes(); i++)
     {
-        PluginDescription plugin = getNextPluginOlderThanTime(pluginTime);
+        juce::PluginDescription plugin = getNextPluginOlderThanTime(pluginTime);
         juce::String pluginUid = getKey("state", plugin);
         juce::String key = getKey("bypass", plugin);
         bool bypass = getAppProperties().getUserSettings()->getBoolValue(key, false);
@@ -251,7 +245,7 @@ void IconMenu::loadActivePlugins()
     }
     
     // Load and connect all plugins
-    AudioProcessorGraph::Node* lastNode = nullptr;
+    juce::AudioProcessorGraph::Node* lastNode = nullptr;
     bool hasInputConnected = false;
     
     for (const auto& job : loadJobs)
@@ -287,7 +281,7 @@ void IconMenu::loadActivePlugins()
             }
         }
         
-        AudioProcessorGraph::Node* currentNode = graph.addNode(std::move(instance)).get();
+        juce::AudioProcessorGraph::Node* currentNode = graph.addNode(std::move(instance)).get();
         
         // Skip connections if plugin is bypassed
         if (job.bypass)
@@ -296,678 +290,574 @@ void IconMenu::loadActivePlugins()
         // Input to plugin
         if (!hasInputConnected)
         {
-            graph.addConnection({ { inputNode->nodeID, CHANNEL_ONE }, { currentNode->nodeID, CHANNEL_ONE } });
-            graph.addConnection({ { inputNode->nodeID, CHANNEL_TWO }, { currentNode->nodeID, CHANNEL_TWO } });
+            graph.addConnection({{ inputNode->nodeID, CHANNEL_ONE }, { currentNode->nodeID, CHANNEL_ONE }});
+            graph.addConnection({{ inputNode->nodeID, CHANNEL_TWO }, { currentNode->nodeID, CHANNEL_TWO }});
             hasInputConnected = true;
-            lastNode = currentNode;
         }
-        // Connect previous plugin to current
         else if (lastNode != nullptr)
         {
-            graph.addConnection({ { lastNode->nodeID, CHANNEL_ONE }, { currentNode->nodeID, CHANNEL_ONE } });
-            graph.addConnection({ { lastNode->nodeID, CHANNEL_TWO }, { currentNode->nodeID, CHANNEL_TWO } });
-            lastNode = currentNode;
+            // Connect previous plugin to current
+            graph.addConnection({{ lastNode->nodeID, CHANNEL_ONE }, { currentNode->nodeID, CHANNEL_ONE }});
+            graph.addConnection({{ lastNode->nodeID, CHANNEL_TWO }, { currentNode->nodeID, CHANNEL_TWO }});
         }
+        
+        lastNode = currentNode;
     }
     
-    // Connect the last active plugin to output
+    // Connect last plugin to output
     if (lastNode != nullptr)
     {
-        graph.addConnection({ { lastNode->nodeID, CHANNEL_ONE }, { outputNode->nodeID, CHANNEL_ONE } });
-        graph.addConnection({ { lastNode->nodeID, CHANNEL_TWO }, { outputNode->nodeID, CHANNEL_TWO } });
+        graph.addConnection({{ lastNode->nodeID, CHANNEL_ONE }, { outputNode->nodeID, CHANNEL_ONE }});
+        graph.addConnection({{ lastNode->nodeID, CHANNEL_TWO }, { outputNode->nodeID, CHANNEL_TWO }});
     }
-    // If all plugins are bypassed, connect input directly to output
-    else if (hasInputConnected == false && activePluginList.getNumTypes() > 0)
+    else if (!hasInputConnected)
     {
-        graph.addConnection({ { inputNode->nodeID, CHANNEL_ONE }, { outputNode->nodeID, CHANNEL_ONE } });
-        graph.addConnection({ { inputNode->nodeID, CHANNEL_TWO }, { outputNode->nodeID, CHANNEL_TWO } });
+        // Default connection if no plugins were loaded successfully
+        graph.addConnection({{ inputNode->nodeID, CHANNEL_ONE }, { outputNode->nodeID, CHANNEL_ONE }});
+        graph.addConnection({{ inputNode->nodeID, CHANNEL_TWO }, { outputNode->nodeID, CHANNEL_TWO }});
     }
 }
 
-PluginDescription IconMenu::getNextPluginOlderThanTime(int &time)
+juce::PluginDescription IconMenu::getNextPluginOlderThanTime(int &time)
 {
-    int timeStatic = time;
-    PluginDescription closest;
-    int diff = std::numeric_limits<int>::max();
-    bool found = false;
+    int pluginTime = INT_MAX;
+    int pluginIndex = -1;
     
     for (int i = 0; i < activePluginList.getNumTypes(); i++)
     {
-        PluginDescription plugin = *activePluginList.getType(i);
-        juce::String key = getKey("order", plugin);
+        juce::String key = getKey("time", activePluginList.getType(i));
         juce::String pluginTimeString = getAppProperties().getUserSettings()->getValue(key);
         
-        // Handle case where the value doesn't exist or isn't a number
         if (pluginTimeString.isEmpty())
             continue;
             
-        int pluginTime = pluginTimeString.getIntValue();
-        if (pluginTime > timeStatic && abs(timeStatic - pluginTime) < diff)
+        int currentTime = pluginTimeString.getIntValue();
+        
+        if (currentTime > time && currentTime < pluginTime)
         {
-            diff = abs(timeStatic - pluginTime);
-            closest = plugin;
-            time = pluginTime;
-            found = true;
+            pluginTime = currentTime;
+            pluginIndex = i;
         }
     }
     
-    if (!found && activePluginList.getNumTypes() > 0)
+    if (pluginIndex != -1)
     {
-        // If no plugin with a time greater than timeStatic was found, 
-        // return the first plugin as a fallback
-        closest = *activePluginList.getType(0);
+        time = pluginTime;
+        return activePluginList.getType(pluginIndex);
     }
     
-    return closest;
+    return juce::PluginDescription();
+}
+
+void IconMenu::savePluginStates()
+{
+    auto xmlPluginListActive = std::unique_ptr<juce::XmlElement>(activePluginList.createXml());
+    
+    if (xmlPluginListActive != nullptr)
+    {
+        getAppProperties().getUserSettings()->setValue("pluginListActive", xmlPluginListActive.get());
+        getAppProperties().getUserSettings()->saveIfNeeded();
+    }
+    
+    auto xmlPluginList = std::unique_ptr<juce::XmlElement>(knownPluginList.createXml());
+    
+    if (xmlPluginList != nullptr)
+    {
+        getAppProperties().getUserSettings()->setValue("pluginList", xmlPluginList.get());
+        getAppProperties().getUserSettings()->saveIfNeeded();
+    }
+}
+
+void IconMenu::deletePluginStates()
+{
+    std::vector<juce::PluginDescription> plugins = getTimeSortedList();
+    
+    juce::ApplicationCommandManager* commandManager = juce::JUCEApplicationBase::getInstance()->getCommandManager();
+    
+    for (const auto& plugin : plugins)
+    {
+        juce::String pluginUid = getKey("state", plugin);
+        getAppProperties().getUserSettings()->removeValue(pluginUid);
+    }
+    
+    activePluginList.clear();
+    savePluginStates();
+}
+
+juce::String IconMenu::getKey(juce::String type, juce::PluginDescription plugin)
+{
+    return "plugin_" + type + "_" + plugin.createIdentifierString();
+}
+
+void IconMenu::mouseDown(const juce::MouseEvent& e)
+{
+    menuIconLeftClicked = e.mods.isLeftButtonDown();
+    
+    menu.clear();
+    
+    if (e.mods.isLeftButtonDown())
+    {
+        juce::PopupMenu pluginsMenu;
+        
+        // Add plugins menu
+        juce::String key = getKey("pluginsMenuClosed", juce::PluginDescription());
+        bool pluginsMenuClosed = getAppProperties().getUserSettings()->getBoolValue(key, true);
+        
+        // First menu section - Add Plugin
+        menu.addItem(1, "Add Plugin");
+        menu.addSeparator();
+        
+        std::vector<juce::PluginDescription> plugins = getTimeSortedList();
+        
+        if (plugins.size() == 0)
+            menu.addItem(-1, "No plugins in chain", false);
+        else
+        {
+            // Add all plugins to menu
+            for (int i = 0; i < (int)plugins.size(); i++)
+            {
+                juce::String pluginUid = getKey("uid", plugins[i]);
+                int uid = getAppProperties().getUserSettings()->getIntValue(pluginUid, i + 2);
+                
+                juce::PopupMenu pluginSubMenu;
+                
+                // Edit plugin UI
+                pluginSubMenu.addItem(INDEX_EDIT + uid, "Edit");
+                
+                // Bypass plugin
+                juce::String key = getKey("bypass", plugins[i]);
+                bool bypass = getAppProperties().getUserSettings()->getBoolValue(key, false);
+                pluginSubMenu.addItem(INDEX_BYPASS + uid, "Bypass", true, bypass);
+                
+                // Delete plugin
+                pluginSubMenu.addItem(INDEX_DELETE + uid, "Delete");
+                
+                // Position controls
+                if (i > 0)
+                    pluginSubMenu.addItem(INDEX_MOVE_UP + uid, "Move Up");
+                if (i < (int)plugins.size() - 1)
+                    pluginSubMenu.addItem(INDEX_MOVE_DOWN + uid, "Move Down");
+                
+                menu.addSubMenu(plugins[i].name, pluginSubMenu);
+            }
+            
+            menu.addSeparator();
+        }
+        
+        menu.addItem(2, "Delete All Plugins");
+        menu.addSeparator();
+        menu.addItem(3, "Audio Settings");
+        
+        // Set icon color menu item
+        #if JUCE_WINDOWS || JUCE_LINUX
+        juce::PopupMenu iconColorMenu;
+        juce::String color = getAppProperties().getUserSettings()->getValue("icon");
+        iconColorMenu.addItem(4, "Black", true, color.equalsIgnoreCase("black"));
+        iconColorMenu.addItem(5, "White", true, color.equalsIgnoreCase("white"));
+        menu.addSubMenu("Icon Color", iconColorMenu);
+        #endif
+        
+        menu.addSeparator();
+        menu.addItem(6, "Exit");
+    }
+    else if (e.mods.isRightButtonDown())
+    {
+        menu.addItem(1, "Show");
+        menu.addItem(2, "Hide");
+        menu.addSeparator();
+        menu.addItem(3, "Exit");
+    }
+    
+    juce::ScopedPointer<juce::MenuBarComponent> menuComponent;
+    menu.showMenuAsync(juce::PopupMenu::Options(), 
+                      juce::ModalCallbackFunction::create([this](int result) { menuInvocationCallback(result, this); }));
+}
+
+void IconMenu::menuInvocationCallback(int id, IconMenu* im)
+{
+    if (im->menuIconLeftClicked)
+    {
+        if (id == 0)
+            return;
+        else if (id == 1)
+        {
+            // Show plugin selection window
+            if (im->pluginListWindow == nullptr)
+                im->pluginListWindow.reset(new PluginListWindow(*im, im->formatManager));
+            else
+                im->pluginListWindow->toFront(true);
+        }
+        else if (id == 2)
+            im->deletePluginStates();
+        else if (id == 3)
+            im->showAudioSettings();
+        else if (id == 4)
+        {
+            im->getAppProperties().getUserSettings()->setValue("icon", "black");
+            im->setIcon();
+        }
+        else if (id == 5)
+        {
+            im->getAppProperties().getUserSettings()->setValue("icon", "white");
+            im->setIcon();
+        }
+        else if (id == 6)
+            juce::JUCEApplicationBase::quit();
+        else
+        {
+            // Handle plugin-specific actions
+            if (id >= im->INDEX_EDIT && id < im->INDEX_BYPASS)
+            {
+                juce::String key = juce::String(id - im->INDEX_EDIT);
+                for (int j = 0; j < im->activePluginList.getNumTypes(); j++)
+                {
+                    juce::String pluginUid = im->getKey("uid", im->activePluginList.getType(j));
+                    int uid = im->getAppProperties().getUserSettings()->getIntValue(pluginUid, j + 2);
+                    
+                    if (uid == id - im->INDEX_EDIT)
+                    {
+                        juce::AudioPluginInstance* instance = nullptr;
+                        
+                        // Find the AudioProcessor for this plugin
+                        for (auto node : im->graph.getNodes())
+                        {
+                            if (auto plugin = dynamic_cast<juce::AudioPluginInstance*>(node->getProcessor()))
+                            {
+                                if (plugin->getPluginDescription().createIdentifierString() == 
+                                    im->activePluginList.getType(j).createIdentifierString())
+                                {
+                                    instance = plugin;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (instance != nullptr)
+                        {
+                            if (PluginWindow::getWindowFor(instance) != nullptr)
+                                PluginWindow::getWindowFor(instance)->toFront(true);
+                            else
+                                new PluginWindow(instance);
+                        }
+                    }
+                }
+            }
+            else if (id >= im->INDEX_BYPASS && id < im->INDEX_DELETE)
+            {
+                juce::String key = juce::String(id - im->INDEX_BYPASS);
+                for (int j = 0; j < im->activePluginList.getNumTypes(); j++)
+                {
+                    juce::String pluginUid = im->getKey("uid", im->activePluginList.getType(j));
+                    int uid = im->getAppProperties().getUserSettings()->getIntValue(pluginUid, j + 2);
+                    
+                    if (uid == id - im->INDEX_BYPASS)
+                    {
+                        juce::String keyToMove = im->getKey("bypass", im->activePluginList.getType(j));
+                        bool valueAbove = !im->getAppProperties().getUserSettings()->getBoolValue(keyToMove, false);
+                        im->getAppProperties().getUserSettings()->setValue(keyToMove, valueAbove);
+                        im->loadActivePlugins();
+                    }
+                }
+            }
+            else if (id >= im->INDEX_DELETE && id < im->INDEX_MOVE_UP)
+            {
+                juce::String key = juce::String(id - im->INDEX_DELETE);
+                for (int j = 0; j < im->activePluginList.getNumTypes(); j++)
+                {
+                    juce::String pluginUid = im->getKey("uid", im->activePluginList.getType(j));
+                    int uid = im->getAppProperties().getUserSettings()->getIntValue(pluginUid, j + 2);
+                    
+                    if (uid == id - im->INDEX_DELETE)
+                    {
+                        im->activePluginList.removeType(j);
+                        im->savePluginStates();
+                        im->loadActivePlugins();
+                    }
+                }
+            }
+            else if (id >= im->INDEX_MOVE_UP && id < im->INDEX_MOVE_DOWN)
+            {
+                juce::String key = juce::String(id - im->INDEX_MOVE_UP);
+                for (int j = 0; j < im->activePluginList.getNumTypes(); j++)
+                {
+                    juce::String pluginUid = im->getKey("uid", im->activePluginList.getType(j));
+                    int uid = im->getAppProperties().getUserSettings()->getIntValue(pluginUid, j + 2);
+                    
+                    if (uid == id - im->INDEX_MOVE_UP)
+                    {
+                        juce::String keyToMove = im->getKey("time", im->activePluginList.getType(j));
+                        juce::String valueAbove = im->getAppProperties().getUserSettings()->getValue(keyToMove);
+                        juce::String keyAbove = im->getKey("time", im->activePluginList.getType(j - 1));
+                        juce::String valueToMove = im->getAppProperties().getUserSettings()->getValue(keyAbove);
+                        im->getAppProperties().getUserSettings()->setValue(keyToMove, valueToMove);
+                        im->getAppProperties().getUserSettings()->setValue(keyAbove, valueAbove);
+                        im->loadActivePlugins();
+                    }
+                }
+            }
+            else if (id >= im->INDEX_MOVE_DOWN)
+            {
+                juce::String key = juce::String(id - im->INDEX_MOVE_DOWN);
+                for (int j = 0; j < im->activePluginList.getNumTypes(); j++)
+                {
+                    juce::String pluginUid = im->getKey("uid", im->activePluginList.getType(j));
+                    int uid = im->getAppProperties().getUserSettings()->getIntValue(pluginUid, j + 2);
+                    
+                    if (uid == id - im->INDEX_MOVE_DOWN)
+                    {
+                        juce::String keyToMove = im->getKey("time", im->activePluginList.getType(j));
+                        juce::String valueBelow = im->getAppProperties().getUserSettings()->getValue(keyToMove);
+                        juce::String keyBelow = im->getKey("time", im->activePluginList.getType(j + 1));
+                        juce::String valueToMove = im->getAppProperties().getUserSettings()->getValue(keyBelow);
+                        im->getAppProperties().getUserSettings()->setValue(keyToMove, valueToMove);
+                        im->getAppProperties().getUserSettings()->setValue(keyBelow, valueBelow);
+                        im->loadActivePlugins();
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        if (id == 1)
+        {
+            #if JUCE_WINDOWS
+            ShowWindow((HWND)im->getPeer()->getNativeHandle(), SW_RESTORE);
+            SetForegroundWindow((HWND)im->getPeer()->getNativeHandle());
+            #elif JUCE_MAC
+            // Mac-specific show code here if needed
+            #endif
+        }
+        else if (id == 2)
+        {
+            #if JUCE_WINDOWS
+            ShowWindow((HWND)im->getPeer()->getNativeHandle(), SW_HIDE);
+            #elif JUCE_MAC
+            // Mac-specific hide code here if needed
+            #endif
+        }
+        else if (id == 3)
+            juce::JUCEApplicationBase::quit();
+    }
+}
+
+juce::String IconMenu::exec(const char* cmd)
+{
+    juce::String key = "cmd_";
+    key += cmd;
+    
+    FILE* pipe = popen(cmd, "r");
+    
+    if (!pipe)
+        return juce::String();
+        
+    char buffer[128];
+    juce::String result;
+    
+    while (!feof(pipe))
+        if (fgets(buffer, 128, pipe) != nullptr)
+            result += buffer;
+            
+    pclose(pipe);
+    return result;
+}
+
+void IconMenu::timerCallback()
+{
+    for (int j = 0; j < activePluginList.getNumTypes(); j++)
+    {
+        juce::String pluginUid = getKey("uid", activePluginList.getType(j));
+    }
 }
 
 void IconMenu::changeListenerCallback(juce::ChangeBroadcaster* changed)
 {
     if (changed == &knownPluginList)
     {
-        auto savedPluginList = std::unique_ptr<XmlElement>(knownPluginList.createXml());
+        auto savedPluginList = std::unique_ptr<juce::XmlElement>(knownPluginList.createXml());
+        
         if (savedPluginList != nullptr)
         {
-            // Save plugin list in a background thread to prevent UI lag
-            juce::Thread::launch([savedPluginList = XmlElement(*savedPluginList)]() {
-                getAppProperties().getUserSettings()->setValue("pluginList", &savedPluginList);
-                getAppProperties().saveIfNeeded();
-            });
+            getAppProperties().getUserSettings()->setValue("pluginList", savedPluginList.get());
+            getAppProperties().getUserSettings()->saveIfNeeded();
         }
     }
     else if (changed == &activePluginList)
     {
-        auto savedPluginList = std::unique_ptr<XmlElement>(activePluginList.createXml());
-        if (savedPluginList != nullptr)
+        auto savedPluginListActive = std::unique_ptr<juce::XmlElement>(activePluginList.createXml());
+        
+        if (savedPluginListActive != nullptr)
         {
-            juce::Thread::launch([savedPluginList = XmlElement(*savedPluginList)]() {
-                getAppProperties().getUserSettings()->setValue("pluginListActive", &savedPluginList);
-                getAppProperties().saveIfNeeded();
-            });
-        }
-    }
-}
-
-#if JUCE_MAC
-std::string IconMenu::exec(const char* cmd)
-{
-    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) return "ERROR";
-    char buffer[128];
-    std::string result = "";
-    while (!feof(pipe.get()))
-    {
-        if (fgets(buffer, 128, pipe.get()) != NULL)
-            result += buffer;
-    }
-    return result;
-}
-#endif
-
-void IconMenu::timerCallback()
-{
-    stopTimer();
-    menu.clear();
-    menu.addSectionHeader(juce::JUCEApplication::getInstance()->getApplicationName());
-    if (menuIconLeftClicked) {
-        menu.addItem(1, "Preferences");
-        menu.addItem(2, "Edit Plugins");
-        menu.addSeparator();
-        menu.addSectionHeader("Active Plugins");
-        // Active plugins
-        int time = 0;
-        for (int i = 0; i < activePluginList.getNumTypes(); i++)
-        {
-            juce::PopupMenu options;
-            options.addItem(INDEX_EDIT + i, "Edit");
-            std::vector<PluginDescription> timeSorted = getTimeSortedList();
-            juce::String key = getKey("bypass", timeSorted[i]);
-            bool bypass = getAppProperties().getUserSettings()->getBoolValue(key);
-            options.addItem(INDEX_BYPASS + i, "Bypass", true, bypass);
-            options.addSeparator();
-            options.addItem(INDEX_MOVE_UP + i, "Move Up", i > 0);
-            options.addItem(INDEX_MOVE_DOWN + i, "Move Down", i < timeSorted.size() - 1);
-            options.addSeparator();
-            options.addItem(INDEX_DELETE + i, "Delete");
-            PluginDescription plugin = getNextPluginOlderThanTime(time);
-            menu.addSubMenu(plugin.name, options);
-        }
-        menu.addSeparator();
-        menu.addSectionHeader("Available Plugins");
-        // All plugins
-        knownPluginList.addToMenu(menu, pluginSortMethod);
-    }
-    else
-    {
-        menu.addItem(1, "Quit");
-        menu.addSeparator();
-        menu.addItem(2, "Delete Plugin States");
-        menu.addItem(3, "Clear Blacklisted Plugins");
-        #if !JUCE_MAC
-            menu.addItem(4, "Invert Icon Color");
-        #endif
-    }
-    
-    #if JUCE_MAC || JUCE_LINUX
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this), 
-                      juce::ModalCallbackFunction::forComponent(menuInvocationCallback, this));
-    #else
-    if (x == 0 || y == 0)
-    {
-        POINT iconLocation;
-        iconLocation.x = 0;
-        iconLocation.y = 0;
-        if (GetCursorPos(&iconLocation))
-        {
-            // Apply DPI scaling to get accurate coordinates
-            double scaleFactor = juce::Desktop::getInstance().getDisplays().getDisplayContaining(
-                                juce::Point<int>(iconLocation.x, iconLocation.y)).scale;
-            x = static_cast<int>(iconLocation.x / scaleFactor);
-            y = static_cast<int>(iconLocation.y / scaleFactor);
-        }
-        else
-        {
-            // Fallback in case GetCursorPos fails
-            juce::Rectangle<int> screenArea = juce::Desktop::getInstance().getDisplays()
-                .getDisplayContaining(juce::Point<int>(0, 0)).userArea;
-            x = screenArea.getCentreX();
-            y = screenArea.getCentreY();
-        }
-    }
-    juce::Rectangle<int> rect(x, y, 1, 1);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(rect), 
-                      juce::ModalCallbackFunction::forComponent(menuInvocationCallback, this));
-    #endif
-}
-
-void IconMenu::mouseDown(const juce::MouseEvent& e)
-{
-    #if JUCE_MAC
-        juce::Process::setDockIconVisible(true);
-    #endif
-    juce::Process::makeForegroundProcess();
-    menuIconLeftClicked = e.mods.isLeftButtonDown();
-    startTimer(50);
-}
-
-void IconMenu::clearBlacklist()
-{
-    std::lock_guard<std::mutex> lock(blacklistMutex);
-    pluginBlacklist.clear();
-    getAppProperties().getUserSettings()->setValue("pluginBlacklist", juce::String());
-    getAppProperties().getUserSettings()->saveIfNeeded();
-    
-    // Show confirmation message
-    juce::AlertWindow::showMessageBox(juce::AlertWindow::InfoIcon, 
-                               "Blacklist Cleared", 
-                               "The plugin blacklist has been cleared. All plugins will be available for scanning again.");
-}
-
-void IconMenu::menuInvocationCallback(int id, IconMenu* im)
-{
-    // Right click
-    if ((!im->menuIconLeftClicked))
-    {
-        if (id == 1)
-        {
-            im->savePluginStates();
-            return juce::JUCEApplication::getInstance()->quit();
-        }
-        if (id == 2)
-        {
-            im->deletePluginStates();
-            return im->loadActivePlugins();
-        }
-        if (id == 3)
-        {
-            return im->clearBlacklist();
-        }
-        if (id == 4)
-        {
-            juce::String color = getAppProperties().getUserSettings()->getValue("icon");
-            getAppProperties().getUserSettings()->setValue("icon", color.equalsIgnoreCase("black") ? "white" : "black");
-            return im->setIcon();
-        }
-    }
-    
-    #if JUCE_MAC
-    // Click elsewhere
-    if (id == 0 && !PluginWindow::containsActiveWindows())
-        juce::Process::setDockIconVisible(false);
-    #endif
-    
-    // Audio settings
-    if (id == 1)
-        im->showAudioSettings();
-    // Reload
-    if (id == 2)
-        im->reloadPlugins();
-    // Plugins
-    if (id > 2)
-    {
-        // Delete plugin - run in background thread to avoid UI stutter
-        if (id >= im->INDEX_DELETE && id < im->INDEX_DELETE + 1000000)
-        {
-            const int index = id - im->INDEX_DELETE;
-            juce::Thread::launch([im, index]() {
-                // Need a copy of the sorted list since we're in a background thread
-                im->deletePluginStates();
-                std::vector<PluginDescription> timeSorted;
-                
-                {
-                    std::lock_guard<std::mutex> lock(im->pluginLoadMutex);
-                    timeSorted = im->getTimeSortedList();
-                }
-                
-                // Check array bounds
-                if (index >= 0 && index < timeSorted.size())
-                {
-                    juce::String key = im->getKey("order", timeSorted[index]);
-                    int unsortedIndex = -1;
-                    
-                    {
-                        std::lock_guard<std::mutex> lock(im->pluginLoadMutex);
-                        for (int i = 0; i < im->activePluginList.getNumTypes(); i++)
-                        {
-                            PluginDescription current = *im->activePluginList.getType(i);
-                            if (key.equalsIgnoreCase(im->getKey("order", current)))
-                            {
-                                unsortedIndex = i;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Fix the infinite loop bug by checking if we found a matching index
-                    if (unsortedIndex >= 0)
-                    {
-                        // Remove plugin order
-                        getAppProperties().getUserSettings()->removeValue(key);
-                        // Remove bypass entry
-                        getAppProperties().getUserSettings()->removeValue(im->getKey("bypass", timeSorted[index]));
-                        getAppProperties().saveIfNeeded();
-                        
-                        // Remove plugin from list
-                        {
-                            std::lock_guard<std::mutex> lock(im->pluginLoadMutex);
-                            im->activePluginList.removeType(unsortedIndex);
-                        }
-                        
-                        // Update UI on the message thread
-                        juce::MessageManager::callAsync([im]() {
-                            // Save current states
-                            im->savePluginStates();
-                            im->loadActivePlugins();
-                            im->startTimer(50); // Refresh menu
-                        });
-                    }
-                }
-            });
-        }
-        // Add plugin
-        else if (im->knownPluginList.getIndexChosenByMenu(id) > -1)
-        {
-            const int pluginIndex = im->knownPluginList.getIndexChosenByMenu(id);
-            juce::Thread::launch([im, pluginIndex]() {
-                std::lock_guard<std::mutex> lock(im->pluginLoadMutex);
-                PluginDescription plugin = *im->knownPluginList.getType(pluginIndex);
-                juce::String key = im->getKey("order", plugin);
-                int t = time(0);
-                getAppProperties().getUserSettings()->setValue(key, t);
-                getAppProperties().saveIfNeeded();
-                im->activePluginList.addType(plugin);
-                
-                juce::MessageManager::callAsync([im]() {
-                    im->savePluginStates();
-                    im->loadActivePlugins();
-                    im->startTimer(50); // Refresh menu
-                });
-            });
-        }
-        // Bypass plugin
-        else if (id >= im->INDEX_BYPASS && id < im->INDEX_BYPASS + 1000000)
-        {
-            int index = id - im->INDEX_BYPASS;
-            std::vector<PluginDescription> timeSorted = im->getTimeSortedList();
-            
-            if (index >= 0 && index < timeSorted.size())
-            {
-                juce::String key = im->getKey("bypass", timeSorted[index]);
-
-                // Set bypass flag
-                bool bypassed = getAppProperties().getUserSettings()->getBoolValue(key);
-                getAppProperties().getUserSettings()->setValue(key, !bypassed);
-                getAppProperties().saveIfNeeded();
-
-                im->savePluginStates();
-                im->loadActivePlugins();
-            }
-        }
-        // Show active plugin GUI
-        else if (id >= im->INDEX_EDIT && id < im->INDEX_EDIT + 1000000)
-        {
-            int pluginNodeId = id - im->INDEX_EDIT + 1;
-            auto* node = im->graph.getNodeForId(juce::AudioProcessorGraph::NodeID(pluginNodeId));
-            if (node != nullptr) {
-                if (PluginWindow* const w = PluginWindow::getWindowFor(node, PluginWindow::Normal))
-                    w->toFront(true);
-            }
-        }
-        // Move plugin up the list
-        else if (id >= im->INDEX_MOVE_UP && id < im->INDEX_MOVE_UP + 1000000)
-        {
-            im->savePluginStates();
-            std::vector<PluginDescription> timeSorted = im->getTimeSortedList();
-            
-            // Verify the index is valid and not already at the top
-            int index = id - im->INDEX_MOVE_UP;
-            if (index > 0 && index < timeSorted.size())
-            {
-                PluginDescription pluginToMove = timeSorted[index];
-                PluginDescription pluginAbove = timeSorted[index - 1];
-                
-                // Swap the order values
-                juce::String keyToMove = im->getKey("order", pluginToMove);
-                juce::String keyAbove = im->getKey("order", pluginAbove);
-                
-                juce::String valueToMove = getAppProperties().getUserSettings()->getValue(keyToMove);
-                juce::String valueAbove = getAppProperties().getUserSettings()->getValue(keyAbove);
-                
-                getAppProperties().getUserSettings()->setValue(keyToMove, valueAbove);
-                getAppProperties().getUserSettings()->setValue(keyAbove, valueToMove);
-                getAppProperties().getUserSettings()->saveIfNeeded();
-            }
-            im->loadActivePlugins();
-        }
-        // Move plugin down the list
-        else if (id >= im->INDEX_MOVE_DOWN && id < im->INDEX_MOVE_DOWN + 1000000)
-        {
-            im->savePluginStates();
-            std::vector<PluginDescription> timeSorted = im->getTimeSortedList();
-            
-            // Verify the index is valid and not already at the bottom
-            int index = id - im->INDEX_MOVE_DOWN;
-            if (index >= 0 && index < timeSorted.size() - 1)
-            {
-                PluginDescription pluginToMove = timeSorted[index];
-                PluginDescription pluginBelow = timeSorted[index + 1];
-                
-                // Swap the order values
-                juce::String keyToMove = im->getKey("order", pluginToMove);
-                juce::String keyBelow = im->getKey("order", pluginBelow);
-                
-                juce::String valueToMove = getAppProperties().getUserSettings()->getValue(keyToMove);
-                juce::String valueBelow = getAppProperties().getUserSettings()->getValue(keyBelow);
-                
-                getAppProperties().getUserSettings()->setValue(keyToMove, valueBelow);
-                getAppProperties().getUserSettings()->setValue(keyBelow, valueToMove);
-                getAppProperties().getUserSettings()->saveIfNeeded();
-            }
-            im->loadActivePlugins();
-        }
-        // Update menu
-        im->startTimer(50);
-    }
-}
-
-std::vector<PluginDescription> IconMenu::getTimeSortedList()
-{
-    int time = 0;
-    std::vector<PluginDescription> list;
-    for (int i = 0; i < activePluginList.getNumTypes(); i++)
-        list.push_back(getNextPluginOlderThanTime(time));
-    return list;
-}
-
-juce::String IconMenu::getKey(juce::String type, juce::PluginDescription plugin)
-{
-    juce::String key = "plugin-" + type.toLowerCase() + "-" + plugin.name + plugin.version + plugin.pluginFormatName;
-    return key;
-}
-
-void IconMenu::deletePluginStates()
-{
-    // Use a background thread for I/O operations
-    juce::Thread::launch([this]() {
-        std::vector<PluginDescription> list;
-        {
-            std::lock_guard<std::mutex> lock(pluginLoadMutex);
-            list = getTimeSortedList();
+            getAppProperties().getUserSettings()->setValue("pluginListActive", savedPluginListActive.get());
+            getAppProperties().getUserSettings()->saveIfNeeded();
         }
         
-        for (int i = 0; i < list.size(); i++)
-        {
-            juce::String pluginUid = getKey("state", list[i]);
-            getAppProperties().getUserSettings()->removeValue(pluginUid);
-        }
-        
-        // Save once at the end, not for each plugin
-        getAppProperties().getUserSettings()->saveIfNeeded();
-    });
-}
-
-void IconMenu::savePluginStates()
-{
-    // Use a background thread for potentially slow I/O operations
-    juce::Thread::launch([this]() {
-        std::vector<PluginDescription> list;
-        {
-            std::lock_guard<std::mutex> lock(pluginLoadMutex);
-            list = getTimeSortedList();
-        }
-        
-        // Build all updates first, then apply in a batch
-        std::map<juce::String, juce::String> updates;
-        
-        for (int i = 0; i < list.size(); i++)
-        {
-            // We need synchronized access to the graph
-            juce::MemoryBlock savedStateBinary;
-            AudioProcessorGraph::Node* node = nullptr;
-            
-            {
-                std::lock_guard<std::mutex> lock(pluginLoadMutex);
-                node = graph.getNodeForId(juce::AudioProcessorGraph::NodeID(i + 1));
-            }
-            
-            if (node == nullptr)
-                continue;
-            
-            // Get the state on the message thread to avoid threading issues
-            juce::MessageManager::getInstance()->callFunctionOnMessageThread([&](void*) -> void* {
-                node->getProcessor()->getStateInformation(savedStateBinary);
-                return nullptr;
-            }, nullptr);
-            
-            if (savedStateBinary.getSize() > 0)
-            {
-                juce::String pluginUid = getKey("state", list[i]);
-                updates[pluginUid] = savedStateBinary.toBase64Encoding();
-            }
-        }
-        
-        // Apply all updates at once
-        auto* settings = getAppProperties().getUserSettings();
-        for (const auto& update : updates)
-            settings->setValue(update.first, update.second);
-        
-        settings->saveIfNeeded();
-    });
-}
-
-void IconMenu::showAudioSettings()
-{
-    juce::AudioDeviceSelectorComponent audioSettingsComp(deviceManager, 0, 256, 0, 256, false, false, true, true);
-    audioSettingsComp.setSize(500, 450);
-    
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setNonOwned(&audioSettingsComp);
-    options.dialogTitle = "Audio Settings";
-    options.componentToCentreAround = this;
-    options.dialogBackgroundColour = juce::Colour::fromRGB(236, 236, 236);
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-
-    options.runModal();
-    auto audioState = std::unique_ptr<XmlElement>(deviceManager.createStateXml());
-    getAppProperties().getUserSettings()->setValue("audioDeviceState", audioState.get());
-    getAppProperties().getUserSettings()->saveIfNeeded();
+        loadActivePlugins();
+    }
 }
 
 void IconMenu::reloadPlugins()
 {
-    if (pluginListWindow == nullptr)
-        pluginListWindow = std::make_unique<PluginListWindow>(*this, formatManager);
-    pluginListWindow->toFront(true);
+    juce::PluginDirectoryScanner::applyBlacklistingsToKnownPluginList(knownPluginList, getAppProperties().getUserSettings());
+}
+
+void IconMenu::showAudioSettings()
+{
+    auto audioSettingsComponent = new juce::AudioDeviceSelectorComponent(deviceManager, 0, 2, 0, 2, true, false, true, false);
+    audioSettingsComponent->setSize(500, 400);
+    
+    juce::DialogWindow::LaunchOptions o;
+    o.content.setNonOwned(audioSettingsComponent);
+    o.dialogTitle = "Audio Settings";
+    o.componentToCentreAround = nullptr;
+    o.dialogBackgroundColour = juce::Colour(0xFF323232);
+    o.escapeKeyTriggersCloseButton = true;
+    o.useNativeTitleBar = true;
+    o.resizable = false;
+    
+    auto* window = o.create();
+    window->setVisible(true);
 }
 
 void IconMenu::removePluginsLackingInputOutput()
 {
-    // Move this potentially slow operation to a background thread
-    juce::Thread::launch([this]() {
-        std::vector<int> removeIndex;
+    for (int i = activePluginList.getNumTypes() - 1; i >= 0; i--)
+    {
+        juce::PluginDescription plugin = activePluginList.getType(i);
         
+        if (plugin.numInputChannels == 0 || plugin.numOutputChannels == 0)
         {
-            std::lock_guard<std::mutex> lock(pluginLoadMutex);
-            for (int i = 0; i < knownPluginList.getNumTypes(); i++)
-            {
-                PluginDescription* plugin = knownPluginList.getType(i);
-                if (plugin->numInputChannels < 2 || plugin->numOutputChannels < 2)
-                    removeIndex.push_back(i);
-            }
-            
-            // Remove from end to avoid index shifting issues
-            std::sort(removeIndex.begin(), removeIndex.end(), std::greater<int>());
-            for (int i : removeIndex)
-                knownPluginList.removeType(i);
+            activePluginList.removeType(i);
+            savePluginStates();
         }
-    });
+    }
 }
 
-// Plugin blacklist management and safe scanning functions
+std::vector<juce::PluginDescription> IconMenu::getTimeSortedList()
+{
+    std::vector<juce::PluginDescription> plugins;
+    int pluginTime = 0;
+    
+    for (int i = 0; i < activePluginList.getNumTypes(); i++)
+    {
+        plugins.push_back(getNextPluginOlderThanTime(pluginTime));
+    }
+    
+    return plugins;
+}
+
 void IconMenu::loadPluginBlacklist()
 {
-    std::lock_guard<std::mutex> lock(blacklistMutex);
-    pluginBlacklist.clear();
-    // Load blacklisted plugins from user settings
-    juce::String blacklistStr = getAppProperties().getUserSettings()->getValue("pluginBlacklist", "");
+    juce::String blacklistStr = getAppProperties().getUserSettings()->getValue("pluginBlacklist");
+    
     if (blacklistStr.isNotEmpty())
     {
         juce::StringArray tokens;
         tokens.addTokens(blacklistStr, "|", "");
+        std::unique_lock<std::mutex> lock(blacklistMutex);
         pluginBlacklist = tokens;
     }
 }
 
 void IconMenu::savePluginBlacklist()
 {
-    std::lock_guard<std::mutex> lock(blacklistMutex);
     juce::String blacklistStr = pluginBlacklist.joinIntoString("|");
+    
     getAppProperties().getUserSettings()->setValue("pluginBlacklist", blacklistStr);
     getAppProperties().getUserSettings()->saveIfNeeded();
 }
 
-void IconMenu::blacklistPlugin(const PluginDescription& plugin)
+void IconMenu::clearBlacklist()
 {
-    // Create a unique ID for the plugin that combines all relevant info
-    juce::String pluginId = plugin.pluginFormatName + ":" + plugin.fileOrIdentifier;
+    juce::String pluginId = "";
     
     {
-        std::lock_guard<std::mutex> lock(blacklistMutex);
-        if (!isPluginBlacklisted(pluginId))
-        {
-            pluginBlacklist.add(pluginId);
-        }
-        else
-        {
-            return; // Already blacklisted, no need to continue
-        }
+        std::unique_lock<std::mutex> lock(blacklistMutex);
+        pluginBlacklist.clear();
     }
+    
     savePluginBlacklist();
     
-    // Also remove it from the known plugins list if it's there
-    juce::Thread::launch([this, pluginId]() {
-        std::lock_guard<std::mutex> lock(pluginLoadMutex);
-        for (int i = 0; i < knownPluginList.getNumTypes(); ++i)
-        {
-            PluginDescription* desc = knownPluginList.getType(i);
-            juce::String currentId = desc->pluginFormatName + ":" + desc->fileOrIdentifier;
-            if (currentId == pluginId)
-            {
-                knownPluginList.removeType(i);
-                break;
-            }
-        }
-    });
+    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
+        "Plugin Blacklist", "Plugin blacklist has been cleared.");
+}
+
+void IconMenu::blacklistPlugin(const juce::PluginDescription& plugin)
+{
+    juce::String pluginId = plugin.createIdentifierString();
+    
+    {
+        std::unique_lock<std::mutex> lock(blacklistMutex);
+        if (pluginBlacklist.contains(pluginId))
+            return;
+            
+        juce::String currentId = pluginId;
+        if (currentId.isNotEmpty())
+            pluginBlacklist.add(currentId);
+    }
+    
+    juce::PluginDirectoryScanner::applyBlacklistingsToKnownPluginList(knownPluginList, getAppProperties().getUserSettings());
+    savePluginBlacklist();
 }
 
 bool IconMenu::isPluginBlacklisted(const juce::String& pluginId) const
 {
-    std::lock_guard<std::mutex> lock(blacklistMutex);
+    std::unique_lock<std::mutex> lock(blacklistMutex);
     return pluginBlacklist.contains(pluginId);
 }
 
 void IconMenu::safePluginScan(juce::AudioPluginFormat* format, const juce::String& formatName)
 {
-    if (format == nullptr)
-        return;
-
-    // Create the splash screen as a progress listener
-    SplashScreen* splashScreen = nullptr;
+    // Create splash screen for scan progress
+    SplashScreen* splashScreen = new SplashScreen();
     
-    // Create splash screen on the message thread
-    juce::MessageManager::callAsync([&]() {
-        auto* splashWindow = new juce::DialogWindow("Loading Nova Host", 
-                                           juce::Colours::transparentBlack, 
-                                           true, 
-                                           false);
-        splashScreen = new SplashScreen();
-        splashWindow->setContentOwned(splashScreen, false);
-        splashWindow->setUsingNativeTitleBar(false);
-        splashWindow->setOpaque(false);
-        splashWindow->setDropShadowEnabled(true);
-        splashWindow->setVisible(true);
-        splashWindow->toFront(true);
+    // Only show scan UI if not running in background
+    if (splashScreen != nullptr)
+    {
+        juce::DialogWindow* splashWindow = splashScreen->createAsDialog("Scanning " + formatName + " plugins", true);
+        if (splashWindow != nullptr)
+            splashWindow->setVisible(true);
+    }
+    
+    // Use safe plugin scanner if available
+    SafePluginScanner scanner;
+    
+    // Connect scanner to progress UI
+    scanner.setProgressListener([splashScreen](float progress, const juce::String& message) {
+        if (splashScreen != nullptr)
+            splashScreen->setProgress(progress, message);
     });
     
-    // Give the message thread time to create the window
-    juce::Thread::sleep(200);
-
-    // Create and run the safe plugin scanner
-    SafePluginScanner scanner(formatManager, knownPluginList, formatName);
+    // Run scan in separate thread
+    scanner.runThread();
     
-    // Set the splash screen as a listener if it was successfully created
-    if (splashScreen != nullptr) {
-        scanner.setProgressListener(splashScreen);
-    }
+    // Report results
+    int numFound = scanner.getNumPluginsFound();
     
-    if (scanner.runThread())
+    juce::String message = formatName + " plugins scan completed:";
+    
+    if (scanner.wasScanCancelled())
     {
-        // Scan completed successfully
-        int numFound = scanner.getNumPluginsFound();
-        
-        juce::String message;
-        if (numFound > 0)
-        {
-            message = juce::String(numFound) + " " + formatName + " plugins were found.";
-        }
-        else if (scanner.wasScanCancelled())
-        {
-            message = "Plugin scan was cancelled.";
-        }
-        else if (scanner.didScanTimeout())
-        {
-            message = "Plugin scan timed out. Some plugins may not have been detected.";
-        }
-        else
-        {
-            message = "No new " + formatName + " plugins were found.";
-        }
-        
-        juce::AlertWindow::showMessageBox(
-            juce::AlertWindow::InfoIcon,
-            "Plugin Scan Complete",
-            message);
+        message = "Scan cancelled by user";
     }
+    else if (scanner.didScanTimeout())
+    {
+        message = "Scan timed out - some plugins may have been skipped";
+    }
+    else
+    {
+        message = juce::String(numFound) + " " + formatName + " plugins found";
+    }
+    
+    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
+        "Plugin Scan Complete", message);
 }
+
+#if JUCE_WINDOWS
+void IconMenu::reactivate(int x, int y)
+{
+    this->x = x;
+    this->y = y;
+    startTimer(200);
+}
+#endif
