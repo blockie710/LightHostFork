@@ -64,41 +64,56 @@ Root: HKCR; Subkey: "{#MyAppName}.vst3\DefaultIcon"; ValueType: string; ValueDat
 Root: HKCR; Subkey: "{#MyAppName}.vst3\shell\open\command"; ValueType: string; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Flags: uninsdeletevalue
 
 [Code]
-// Add a page to select default plugin directories
+// Add a page to select default plugin directories with improved UI
 var
   PluginDirsPage: TInputDirWizardPage;
 
 procedure InitializeWizard;
 begin
-  // Create the page to select plugin directories
+  // Create a page with VST directory selection
   PluginDirsPage := CreateInputDirPage(wpSelectDir,
     'Plugin Directories', 'Where are your audio plugins located?',
-    'Select folders where your VST, VST3, or other audio plugins are located.' + #13#10 +
-    'Light Host will scan these directories when searching for plugins.',
+    'Select folders where your audio plugins are located. Light Host will scan these directories ' +
+    'when searching for plugins.' + #13#10 + #13#10 +
+    'If you don''t know where your plugins are stored, you can leave these fields empty and configure later.',
     False, '');
     
-  // Add common VST directories
-  PluginDirsPage.Add('Common VST2 Plugins Directory (optional)');
-  PluginDirsPage.Add('Common VST3 Plugins Directory (optional)');
+  // Add entries for different plugin formats
+  PluginDirsPage.Add('VST2 Plugins Directory');
+  PluginDirsPage.Add('VST3 Plugins Directory');
+  PluginDirsPage.Add('Additional Plugins Directory (optional)');
   
-  // Set default values
+  // Set default values based on standard locations
   PluginDirsPage.Values[0] := ExpandConstant('{commonpf}\VSTPlugins');
   PluginDirsPage.Values[1] := ExpandConstant('{commonpf}\Common Files\VST3');
+  PluginDirsPage.Values[2] := '';
 end;
 
-procedure RegisterPaths(Path1, Path2: String);
+// Store plugin paths in registry for the app to use
+procedure RegisterPaths;
 var
   Paths: String;
 begin
-  // Store selected plugin directories in registry for app to use
-  if Path1 <> '' then
-    Paths := Path1;
+  Paths := '';
   
-  if Path2 <> '' then begin
+  // Build pipe-separated list of valid paths
+  if PluginDirsPage.Values[0] <> '' then
+    Paths := PluginDirsPage.Values[0];
+  
+  if PluginDirsPage.Values[1] <> '' then
+  begin
     if Paths <> '' then
-      Paths := Paths + '|' + Path2
+      Paths := Paths + '|' + PluginDirsPage.Values[1]
     else
-      Paths := Path2;
+      Paths := PluginDirsPage.Values[1];
+  end;
+  
+  if PluginDirsPage.Values[2] <> '' then
+  begin
+    if Paths <> '' then
+      Paths := Paths + '|' + PluginDirsPage.Values[2]
+    else
+      Paths := PluginDirsPage.Values[2];
   end;
   
   if Paths <> '' then
@@ -108,5 +123,5 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
-    RegisterPaths(PluginDirsPage.Values[0], PluginDirsPage.Values[1]);
+    RegisterPaths;
 end;
