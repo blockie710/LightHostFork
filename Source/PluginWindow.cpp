@@ -8,6 +8,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginWindow.h"
+#include "GPUAccelerationManager.h"
 
 class PluginWindow;
 static Array<PluginWindow*> activePluginWindows;
@@ -18,7 +19,8 @@ PluginWindow::PluginWindow(Component* const pluginEditor,
     : DocumentWindow(pluginEditor->getName(), Colours::lightgrey,
                      DocumentWindow::minimiseButton | DocumentWindow::closeButton),
       owner(o),
-      type(t)
+      type(t),
+      gpuAccelerationEnabled(false)
 {
     // Set a good default size based on plugin editor size
     setContentOwned(pluginEditor, true);
@@ -37,8 +39,66 @@ PluginWindow::PluginWindow(Component* const pluginEditor,
 
     activePluginWindows.add(this);
     
+    // Apply GPU acceleration if available
+    applyGPUAccelerationIfAvailable();
+    
     // Start position & size timer to handle plugins that resize themselves after creation
     startTimer(500);
+}
+
+void PluginWindow::applyGPUAccelerationIfAvailable()
+{
+    // Check if GPU acceleration is available for this system
+    if (GPUAccelerationManager::getInstance().isGPUAccelerationAvailable())
+    {
+        // Get persistent setting for this plugin - default to enabled if not specified
+        gpuAccelerationEnabled = owner->properties.getWithDefault("gpuAcceleration", true);
+        
+        if (gpuAccelerationEnabled)
+        {
+            // Apply GPU acceleration to the content component
+            Component* content = getContentComponent();
+            if (content != nullptr)
+            {
+                GPUAccelerationManager::getInstance().applyToComponent(content, false);
+            }
+        }
+    }
+}
+
+void PluginWindow::setGPUAccelerationEnabled(bool enabled)
+{
+    // Only proceed if the setting actually changes
+    if (gpuAccelerationEnabled != enabled)
+    {
+        gpuAccelerationEnabled = enabled;
+        
+        // Store in plugin properties for persistence
+        owner->properties.set("gpuAcceleration", enabled);
+        
+        Component* content = getContentComponent();
+        if (content != nullptr)
+        {
+            if (enabled)
+            {
+                // Apply GPU acceleration if enabled
+                GPUAccelerationManager::getInstance().applyToComponent(content, false);
+            }
+            else
+            {
+                // Remove GPU acceleration if disabled
+                GPUAccelerationManager::getInstance().removeFromComponent(content);
+            }
+            
+            // Force a repaint of the content
+            content->repaint();
+        }
+    }
+}
+
+bool PluginWindow::isGPUAccelerationEnabled() const
+{
+    return gpuAccelerationEnabled;
 }
 
 void PluginWindow::positionPluginWindow()
@@ -305,6 +365,13 @@ PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
 
 PluginWindow::~PluginWindow()
 {
+    // Ensure we remove GPU acceleration before destruction
+    Component* content = getContentComponent();
+    if (content != nullptr && gpuAccelerationEnabled)
+    {
+        GPUAccelerationManager::getInstance().removeFromComponent(content);
+    }
+    
     activePluginWindows.removeFirstMatchingValue(this);
     clearContentComponent();
 }

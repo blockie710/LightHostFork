@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "GPUAccelerationManager.h"
 
 class PluginWindow : public juce::DocumentWindow, private juce::Timer
 {
@@ -46,14 +47,24 @@ public:
     static juce::String getLastXProp (WindowFormatType type)    { return "uiLastX_" + juce::String ((int) type); }
     static juce::String getLastYProp (WindowFormatType type)    { return "uiLastY_" + juce::String ((int) type); }
     static juce::String getOpenProp  (WindowFormatType type)    { return "uiopen_"  + juce::String ((int) type); }
+    
+    // Enable/disable GPU acceleration on this window
+    void setGPUAccelerationEnabled(bool enabled);
+    
+    // Check if GPU acceleration is currently enabled
+    bool isGPUAccelerationEnabled() const;
 
 private:
     juce::AudioProcessorGraph::Node* owner;
     WindowFormatType type;
     int positionCheckCount = 5; // Number of timer checks to perform
+    bool gpuAccelerationEnabled = false;
     
     // Helper method to position the window intelligently
     void positionPluginWindow();
+    
+    // Apply GPU acceleration to plugin editor if available
+    void applyGPUAccelerationIfAvailable();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginWindow)
 };
