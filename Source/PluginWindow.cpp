@@ -10,14 +10,25 @@
 #include "PluginWindow.h"
 #include "GPUAccelerationManager.h"
 
-class PluginWindow;
-static Array<PluginWindow*> activePluginWindows;
+// Replace raw pointer array with a safer container using weak references
+static std::vector<std::weak_ptr<PluginWindow>> activePluginWindowsWeak;
+static std::mutex activeWindowsMutex;
 
-PluginWindow::PluginWindow(Component* const pluginEditor,
-                           AudioProcessorGraph::Node* const o,
+// Helper to purge expired window references
+static void purgeExpiredWindowReferences()
+{
+    std::lock_guard<std::mutex> lock(activeWindowsMutex);
+    activePluginWindowsWeak.erase(
+        std::remove_if(activePluginWindowsWeak.begin(), activePluginWindowsWeak.end(),
+            [](const std::weak_ptr<PluginWindow>& weak) { return weak.expired(); }),
+        activePluginWindowsWeak.end());
+}
+
+PluginWindow::PluginWindow(juce::Component* const pluginEditor,
+                           juce::AudioProcessorGraph::Node* const o,
                            WindowFormatType t)
-    : DocumentWindow(pluginEditor->getName(), Colours::lightgrey,
-                     DocumentWindow::minimiseButton | DocumentWindow::closeButton),
+    : juce::DocumentWindow(pluginEditor->getName(), juce::Colours::lightgrey,
+                     juce::DocumentWindow::minimiseButton | juce::DocumentWindow::closeButton),
       owner(o),
       type(t),
       gpuAccelerationEnabled(false)
@@ -37,7 +48,14 @@ PluginWindow::PluginWindow(Component* const pluginEditor,
     owner->properties.set(getOpenProp(type), true);
     setVisible(true);
 
-    activePluginWindows.add(this);
+    // Register this window in the active windows list using a shared_ptr
+    {
+        std::lock_guard<std::mutex> lock(activeWindowsMutex);
+        // First purge any expired references
+        purgeExpiredWindowReferences();
+        std::shared_ptr<PluginWindow> self = shared_from_this();
+        activePluginWindowsWeak.push_back(self);
+    }
     
     // Apply GPU acceleration if available
     applyGPUAccelerationIfAvailable();
@@ -124,13 +142,20 @@ void PluginWindow::positionPluginWindow()
             jmax(10, screenArea.getHeight() - defaultHeight - 50));
             
         // Try to avoid having windows stack directly on top of each other
-        for (const auto* existingWindow : activePluginWindows)
         {
-            if (std::abs(existingWindow->getX() - defaultX) < 50 && 
-                std::abs(existingWindow->getY() - defaultY) < 50)
+            std::lock_guard<std::mutex> lock(activeWindowsMutex);
+            purgeExpiredWindowReferences();
+            for (const auto& weakWindow : activePluginWindowsWeak)
             {
-                defaultX = (defaultX + 100) % (screenArea.getWidth() - defaultWidth - 20);
-                defaultY = (defaultY + 100) % (screenArea.getHeight() - defaultHeight - 20);
+                if (auto existingWindow = weakWindow.lock())
+                {
+                    if (std::abs(existingWindow->getX() - defaultX) < 50 && 
+                        std::abs(existingWindow->getY() - defaultY) < 50)
+                    {
+                        defaultX = (defaultX + 100) % (screenArea.getWidth() - defaultWidth - 20);
+                        defaultY = (defaultY + 100) % (screenArea.getHeight() - defaultHeight - 20);
+                    }
+                }
             }
         }
     }
@@ -209,27 +234,52 @@ void PluginWindow::timerCallback()
 
 void PluginWindow::closeCurrentlyOpenWindowsFor(const uint32 nodeId)
 {
-    for (int i = activePluginWindows.size(); --i >= 0;)
-        if (activePluginWindows.getUnchecked(i)->owner->nodeId == nodeId)
-            delete activePluginWindows.getUnchecked(i);
+    std::lock_guard<std::mutex> lock(activeWindowsMutex);
+    purgeExpiredWindowReferences();
+    for (auto it = activePluginWindowsWeak.begin(); it != activePluginWindowsWeak.end();)
+    {
+        if (auto window = it->lock())
+        {
+            if (window->owner->nodeId == nodeId)
+            {
+                it = activePluginWindowsWeak.erase(it);
+                delete window.get();
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        else
+        {
+            ++it;
+        }
+    }
 }
 
 void PluginWindow::closeAllCurrentlyOpenWindows()
 {
-    if (activePluginWindows.size() > 0)
+    std::lock_guard<std::mutex> lock(activeWindowsMutex);
+    purgeExpiredWindowReferences();
+    for (auto& weakWindow : activePluginWindowsWeak)
     {
-        for (int i = activePluginWindows.size(); --i >= 0;)
-            delete activePluginWindows.getUnchecked(i);
-
-        Component dummyModalComp;
-        dummyModalComp.enterModalState();
-        MessageManager::getInstance()->runDispatchLoopUntil(50);
+        if (auto window = weakWindow.lock())
+        {
+            delete window.get();
+        }
     }
+    activePluginWindowsWeak.clear();
+
+    Component dummyModalComp;
+    dummyModalComp.enterModalState();
+    MessageManager::getInstance()->runDispatchLoopUntil(50);
 }
 
 bool PluginWindow::containsActiveWindows()
 {
-    return activePluginWindows.size() > 0;
+    std::lock_guard<std::mutex> lock(activeWindowsMutex);
+    purgeExpiredWindowReferences();
+    return !activePluginWindowsWeak.empty();
 }
 
 //==============================================================================
@@ -316,10 +366,18 @@ PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
 {
     jassert(node != nullptr);
 
-    for (int i = activePluginWindows.size(); --i >= 0;)
-        if (activePluginWindows.getUnchecked(i)->owner == node
-             && activePluginWindows.getUnchecked(i)->type == type)
-            return activePluginWindows.getUnchecked(i);
+    {
+        std::lock_guard<std::mutex> lock(activeWindowsMutex);
+        purgeExpiredWindowReferences();
+        for (const auto& weakWindow : activePluginWindowsWeak)
+        {
+            if (auto window = weakWindow.lock())
+            {
+                if (window->owner == node && window->type == type)
+                    return window.get();
+            }
+        }
+    }
 
     AudioProcessor* processor = node->getProcessor();
     AudioProcessorEditor* ui = nullptr;
@@ -357,7 +415,12 @@ PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
         if (AudioPluginInstance* const plugin = dynamic_cast<AudioPluginInstance*>(processor))
             ui->setName(plugin->getName());
 
-        return new PluginWindow(ui, node, type);
+        auto newWindow = std::make_shared<PluginWindow>(ui, node, type);
+        {
+            std::lock_guard<std::mutex> lock(activeWindowsMutex);
+            activePluginWindowsWeak.push_back(newWindow);
+        }
+        return newWindow.get();
     }
 
     return nullptr;
@@ -372,7 +435,7 @@ PluginWindow::~PluginWindow()
         GPUAccelerationManager::getInstance().removeFromComponent(content);
     }
     
-    activePluginWindows.removeFirstMatchingValue(this);
+    owner->properties.set(getOpenProp(type), false);
     clearContentComponent();
 }
 

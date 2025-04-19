@@ -46,13 +46,16 @@ public:
           numFound(0),
           scanCancelled(false),
           progressListener(nullptr),
-          searchPath(getPluginSearchPaths())
+          searchPath(getPluginSearchPaths()),
+          lastProgressUpdateTime(std::chrono::steady_clock::now())
     {
         setTimeoutMs(timeoutMilliseconds); // Configurable timeout for plugin scanning
     }
     
-    void setProgressListener(PluginScanProgressListener* listener)
+    // Use shared_ptr instead of raw pointer for better safety
+    void setProgressListener(std::shared_ptr<PluginScanProgressListener> listener)
     {
+        std::lock_guard<std::mutex> lock(progressListenerMutex);
         progressListener = listener;
     }
     
@@ -450,8 +453,11 @@ public:
     
     bool isPluginBlacklisted(const juce::PluginDescription& desc)
     {
+        // Thread-safe blacklist checking
+        std::lock_guard<std::mutex> lock(blacklistMutex);
+        
         // Get the blacklist from settings
-        juce::String blacklistStr = juce::JUCEApplication::getInstance()->getGlobalProperties().getUserSettings()->getValue("pluginBlacklist", "");
+        juce::String blacklistStr = juce::JUCEApplication::getInstance()->getGlobalProperties()->getUserSettings()->getValue("pluginBlacklist", "");
         if (blacklistStr.isEmpty())
             return false;
             
@@ -488,17 +494,26 @@ public:
             dialogCompleted->store(true);
         });
         
-        // Wait for the dialog to complete
-        while (!dialogCompleted->load() && !threadShouldExit() && !scanCancelled.load()) {
-            juce::Thread::sleep(100);
+        // Wait for the dialog to complete with a timeout to prevent hanging
+        int timeoutMs = 30000; // 30 seconds max wait for user response
+        int elapsedMs = 0;
+        int sleepIntervalMs = 100;
+        
+        while (!dialogCompleted->load() && !threadShouldExit() && !scanCancelled.load() && elapsedMs < timeoutMs) {
+            juce::Thread::sleep(sleepIntervalMs);
+            elapsedMs += sleepIntervalMs;
         }
             
         if (shouldBlacklist->load() && !threadShouldExit() && !scanCancelled.load())
         {
+            // Thread-safe blacklist update
+            std::lock_guard<std::mutex> lock(blacklistMutex);
+            
             juce::String pluginId = desc.pluginFormatName + ":" + desc.fileOrIdentifier;
                 
             // Get existing blacklist
-            juce::String blacklistStr = juce::JUCEApplication::getInstance()->getGlobalProperties().getUserSettings()->getValue("pluginBlacklist", "");
+            auto* settings = juce::JUCEApplication::getInstance()->getGlobalProperties()->getUserSettings();
+            juce::String blacklistStr = settings->getValue("pluginBlacklist", "");
             juce::StringArray blacklist;
                 
             if (blacklistStr.isNotEmpty())
@@ -508,8 +523,8 @@ public:
             if (!blacklist.contains(pluginId))
             {
                 blacklist.add(pluginId);
-                juce::JUCEApplication::getInstance()->getGlobalProperties()->getUserSettings()->setValue("pluginBlacklist", blacklist.joinIntoString("|"));
-                juce::JUCEApplication::getInstance()->getGlobalProperties()->getUserSettings()->saveIfNeeded();
+                settings->setValue("pluginBlacklist", blacklist.joinIntoString("|"));
+                settings->saveIfNeeded();
             }
         }
     }
@@ -517,9 +532,21 @@ public:
 private:
     void updateProgressListener(float progress, const juce::String& message)
     {
-        if (progressListener != nullptr)
+        // Use rate limiting to avoid too many UI updates
+        const auto now = std::chrono::steady_clock::now();
+        const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - lastProgressUpdateTime).count();
+            
+        // Limit updates to once every 250ms unless it's the final update (progress == 1.0f)
+        if (progress == 1.0f || elapsedMs > 250)
         {
-            progressListener->onScanProgressUpdate(progress, message);
+            lastProgressUpdateTime = now;
+            
+            std::lock_guard<std::mutex> lock(progressListenerMutex);
+            if (progressListener != nullptr)
+            {
+                progressListener->onScanProgressUpdate(progress, message);
+            }
         }
     }
 
@@ -554,7 +581,7 @@ private:
         
         // Add user paths from settings
         juce::StringArray userPaths;
-        userPaths.addTokens(juce::JUCEApplication::getInstance()->getGlobalProperties().getUserSettings()->getValue("pluginSearchPaths", ""), "|", "");
+        userPaths.addTokens(juce::JUCEApplication::getInstance()->getGlobalProperties()->getUserSettings()->getValue("pluginSearchPaths", ""), "|", "");
         for (int i = 0; i < userPaths.size(); ++i)
         {
             if (userPaths[i].isNotEmpty())
@@ -570,9 +597,11 @@ private:
     bool scanTimedOut;
     int numFound;
     std::atomic<bool> scanCancelled;
-    PluginScanProgressListener* progressListener;
+    std::shared_ptr<PluginScanProgressListener> progressListener;
+    std::mutex progressListenerMutex;
     std::mutex blacklistMutex;
     juce::FileSearchPath searchPath;
+    std::chrono::steady_clock::time_point lastProgressUpdateTime;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SafePluginScanner)
 };
