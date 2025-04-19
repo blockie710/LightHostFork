@@ -2,6 +2,7 @@
 #include "IconMenu.hpp"
 #include "SafePluginScanner.h"
 #include "SplashScreen.h"
+#include "GPUAccelerationManager.h"
 
 #if ! (JUCE_PLUGINHOST_VST || JUCE_PLUGINHOST_VST3 || JUCE_PLUGINHOST_AU)
  #error "If you're building the plugin host, you probably want to enable VST and/or AU support"
@@ -21,6 +22,9 @@ public:
         
         // Show splash screen early in initialization
         showSplashScreen();
+        
+        // Initialize GPU acceleration
+        initializeGPUAcceleration();
         
         PropertiesFile::Options options;
         options.applicationName     = getApplicationName();
@@ -45,6 +49,9 @@ public:
         mainWindow = nullptr;
         appProperties = nullptr;
         LookAndFeel::setDefaultLookAndFeel(nullptr);
+        
+        // Clean up GPU acceleration manager
+        GPUAccelerationManager::deleteInstance();
     }
 
     void systemRequestedQuit() override
@@ -66,6 +73,37 @@ public:
 private:
     std::unique_ptr<IconMenu> mainWindow;
     DialogWindow* splashWindow = nullptr;
+    
+    // Initialize GPU acceleration for the application
+    void initializeGPUAcceleration()
+    {
+        // Get the GPU acceleration manager instance (creates it if needed)
+        auto& gpuManager = GPUAccelerationManager::getInstance();
+        
+        // Check if GPU acceleration is available on this system
+        if (gpuManager.isGPUAccelerationAvailable())
+        {
+            // Load setting from application properties, default to enabled
+            PropertiesFile* props = appProperties != nullptr ? 
+                appProperties->getUserSettings() : nullptr;
+                
+            bool enableGPU = props != nullptr ? 
+                props->getBoolValue("enableGPUAcceleration", true) : true;
+                
+            // Configure optimal settings based on detected GPU
+            gpuManager.configureOptimalSettings();
+            
+            // Enable GPU acceleration globally
+            gpuManager.setGPUAccelerationEnabled(enableGPU);
+            
+            // Log GPU information
+            Logger::writeToLog("GPU acceleration initialized: " + gpuManager.getGPUInfo());
+        }
+        else
+        {
+            Logger::writeToLog("GPU acceleration not available on this system");
+        }
+    }
 
     // Show a splash screen with version and build information
     void showSplashScreen()

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8e44ad;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#mainGradient)" />
+  
+  <!-- Sound Wave Forms -->
+  <path d="M128,320 Q196,160 256,320 Q316,160 384,320" 
+        stroke="white" stroke-width="10" fill="none" 
+        stroke-linecap="round" filter="url(#glow)" />
+  
+  <!-- Equalizer Bars -->
+  <rect x="128" y="180" width="20" height="140" rx="10" fill="white" opacity="0.8" />
+  <rect x="168" y="210" width="20" height="110" rx="10" fill="white" opacity="0.8" />
+  <rect x="208" y="150" width="20" height="170" rx="10" fill="white" opacity="0.8" />
+  <rect x="248" y="190" width="20" height="130" rx="10" fill="white" opacity="0.8" />
+  <rect x="288" y="160" width="20" height="160" rx="10" fill="white" opacity="0.8" />
+  <rect x="328" y="220" width="20" height="100" rx="10" fill="white" opacity="0.8" />
+  <rect x="368" y="170" width="20" height="150" rx="10" fill="white" opacity="0.8" />
+  
+  <!-- GPU Acceleration Symbol -->
+  <polygon points="256,100 276,135 256,120 236,135" 
+           fill="white" opacity="0.9" />
+  <text x="256" y="400" font-family="Arial" font-size="48" 
+        font-weight="bold" fill="white" text-anchor="middle">NOVA</text>
+</svg>

@@ -13,17 +13,24 @@ A modern VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 - **Persistent Settings**: Plugin states and audio settings are remembered between sessions
 - **Rearrangeable Plugins**: Drag and drop interface for reordering plugins in your chain
 - **Bypass Options**: Easily bypass individual plugins while keeping them in your chain
+- **GPU Acceleration**: Hardware-accelerated rendering for improved performance and visual quality
+- **Performance Optimization**: Reduced CPU usage and improved audio thread prioritization
 
 ## What's New in Nova Host
 
 Nova Host is a fork of the Light Host project with significant enhancements:
 
-- Completely redesigned plugin scanning system that prevents crashes
-- Windows 10/11 professional installer with VST directory detection
-- Proper high DPI handling on all platforms
-- Memory leak fixes and stability improvements
-- Enhanced UI with better plugin organization
-- Support for the latest plugin formats
+- **GPU Acceleration**: Comprehensive hardware-accelerated rendering for plugin UIs
+- **Performance Optimization**: Memory management improvements and efficient CPU usage
+- **Modern Visual Design**: Updated icon and UI elements for a contemporary look
+- **Completely redesigned plugin scanning system** that prevents crashes
+- **Windows 10/11 professional installer** with VST directory detection
+- **Proper high DPI handling** on all platforms
+- **Memory leak fixes** and stability improvements
+- **Enhanced UI** with better plugin organization
+- **Support for the latest plugin formats**
+
+For detailed information about GPU acceleration, see the [GPU Acceleration Guide](GPU_ACCELERATION.md).
 
 ## Building from Source
 
@@ -49,6 +56,7 @@ See the detailed [Windows Installation Guide](WINDOWS_INSTALL_GUIDE.md) for spec
 ## Command Line Options
 
 - `-multi-instance=NAME`: Run multiple instances with separate settings, where NAME is a unique identifier
+- `-gpu-acceleration=off`: Disable GPU acceleration at startup
 
 ## License
 
