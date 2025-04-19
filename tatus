@@ -1,0 +1,5 @@
+[33m65c3a3b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m Refactor HostStartup and SplashScreen to use unique_ptr for better memory management; add callback for splash screen closure
+[33m9d84c5a[m Refactor PluginWindow to use shared_ptr for memory management and enhance window creation logic; update IconMenu to utilize new factory method for plugin windows
+[33m0369f59[m Refactor PluginWindow and SafePluginScanner to use smart pointers for better memory management and thread safety
+[33md88dd6b[m Implement parallel scanning for plugins using ThreadPool to enhance performance
+[33m6d5eeb4[m Add SVG icon and implement ThreadPool class for parallel task processing
