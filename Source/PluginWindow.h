@@ -10,8 +10,11 @@
 
 #include <JuceHeader.h>
 #include "GPUAccelerationManager.h"
+#include <memory>
 
-class PluginWindow : public juce::DocumentWindow, private juce::Timer
+class PluginWindow : public juce::DocumentWindow, 
+                     private juce::Timer, 
+                     public std::enable_shared_from_this<PluginWindow>
 {
 public:
     enum WindowFormatType
@@ -22,16 +25,23 @@ public:
         Parameters
     };
 
-    PluginWindow (juce::Component* pluginEditor,
+    // Note: use createPluginWindow factory method instead of constructor directly
+    PluginWindow(juce::Component* pluginEditor,
                  juce::AudioProcessorGraph::Node* owner,
                  WindowFormatType type);
 
     ~PluginWindow() override;
 
-    static PluginWindow* getWindowFor (juce::AudioProcessorGraph::Node* node,
-                                       WindowFormatType type);
+    // Factory method to properly create shared_ptr-managed windows
+    static std::shared_ptr<PluginWindow> createPluginWindow(
+        juce::Component* pluginEditor,
+        juce::AudioProcessorGraph::Node* owner,
+        WindowFormatType type);
 
-    static void closeCurrentlyOpenWindowsFor (const uint32 nodeId);
+    static PluginWindow* getWindowFor(juce::AudioProcessorGraph::Node* node,
+                                     WindowFormatType type);
+
+    static void closeCurrentlyOpenWindowsFor(const uint32 nodeId);
 
     static void closeAllCurrentlyOpenWindows();
 
@@ -44,9 +54,9 @@ public:
     // Timer callback for handling UI responsiveness
     void timerCallback() override;
 
-    static juce::String getLastXProp (WindowFormatType type)    { return "uiLastX_" + juce::String ((int) type); }
-    static juce::String getLastYProp (WindowFormatType type)    { return "uiLastY_" + juce::String ((int) type); }
-    static juce::String getOpenProp  (WindowFormatType type)    { return "uiopen_"  + juce::String ((int) type); }
+    static juce::String getLastXProp(WindowFormatType type)    { return "uiLastX_" + juce::String((int) type); }
+    static juce::String getLastYProp(WindowFormatType type)    { return "uiLastY_" + juce::String((int) type); }
+    static juce::String getOpenProp(WindowFormatType type)     { return "uiopen_"  + juce::String((int) type); }
     
     // Enable/disable GPU acceleration on this window
     void setGPUAccelerationEnabled(bool enabled);
@@ -66,5 +76,5 @@ private:
     // Apply GPU acceleration to plugin editor if available
     void applyGPUAccelerationIfAvailable();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginWindow)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginWindow)
 };

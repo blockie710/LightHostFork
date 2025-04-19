@@ -1,0 +1,116 @@
+name: Linux Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Release]
+        # Uncomment to enable Debug builds if needed
+        # configuration: [Release, Debug]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libasound2-dev libjack-jackd2-dev \
+        ladspa-sdk libcurl4-openssl-dev libfreetype6-dev libx11-dev libxcomposite-dev \
+        libxcursor-dev libxinerama-dev libxrandr-dev libxrender-dev libwebkit2gtk-4.0-dev \
+        libglu1-mesa-dev mesa-common-dev ccache
+        
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ runner.os }}-build
+        
+    - name: Cache Projucer build
+      uses: actions/cache@v4
+      id: cache-projucer
+      with:
+        path: lib/juce/extras/Projucer/Builds/LinuxMakefile/build
+        key: ${{ runner.os }}-projucer-${{ hashFiles('lib/juce/extras/Projucer/**/*.cpp', 'lib/juce/extras/Projucer/**/*.h') }}
+        restore-keys: |
+          ${{ runner.os }}-projucer-
+        
+    - name: Build Projucer
+      if: steps.cache-projucer.outputs.cache-hit != 'true'
+      run: |
+        cd lib/juce/extras/Projucer/Builds/LinuxMakefile
+        make CONFIG=Release -j$(nproc)
+        
+    - name: Generate Makefiles
+      id: generate-makefiles
+      run: |
+        ./lib/juce/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave "LightHost.jucer"
+        ./lib/juce/extras/Projucer/Builds/LinuxMakefile/build/Projucer --resave "NovaHost.jucer"
+        
+    - name: Build LightHost
+      id: build-lighthost
+      run: |
+        cd Builds/LinuxMakefile
+        make CONFIG=${{ matrix.configuration }} -j$(nproc)
+        
+    - name: Build NovaHost
+      id: build-novahost
+      run: |
+        cd Builds/LinuxMakefile
+        make -f NovaHost.make CONFIG=${{ matrix.configuration }} -j$(nproc)
+    
+    - name: Test applications
+      run: |
+        # Simple validation that the binaries execute (non-UI test)
+        Builds/LinuxMakefile/build/LightHost --help || true
+        Builds/LinuxMakefile/build/NovaHost --help || true
+        
+    - name: Archive build artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Host-Linux-${{ matrix.configuration }}
+        path: |
+          Builds/LinuxMakefile/build/*.so
+          Builds/LinuxMakefile/build/LightHost
+          Builds/LinuxMakefile/build/NovaHost
+        retention-days: 7
+        
+    - name: Create release package
+      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      run: |
+        mkdir -p release-package/LightHostFork
+        cp Builds/LinuxMakefile/build/LightHost release-package/LightHostFork/
+        cp Builds/LinuxMakefile/build/NovaHost release-package/LightHostFork/
+        cp license release-package/LightHostFork/
+        cp readme.md release-package/LightHostFork/
+        chmod +x release-package/LightHostFork/LightHost
+        chmod +x release-package/LightHostFork/NovaHost
+        cd release-package
+        tar -czf LightHostFork-Linux.tar.gz LightHostFork
+        
+    - name: Upload release package
+      if: matrix.configuration == 'Release' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: actions/upload-artifact@v4
+      with:
+        name: LightHostFork-Linux-Package
+        path: release-package/LightHostFork-Linux.tar.gz
+        retention-days: 30

@@ -153,6 +153,14 @@ public:
     }
     
     /**
+     * Returns the number of worker threads in the pool
+     */
+    size_t getNumThreads() const
+    {
+        return workers.size();
+    }
+    
+    /**
      * Wait for all current tasks to complete
      * Note: This doesn't prevent new tasks from being added while waiting
      */

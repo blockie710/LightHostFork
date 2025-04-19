@@ -24,6 +24,26 @@ static void purgeExpiredWindowReferences()
         activePluginWindowsWeak.end());
 }
 
+// Factory method to properly create shared_ptr-managed windows
+std::shared_ptr<PluginWindow> PluginWindow::createPluginWindow(
+    juce::Component* pluginEditor,
+    juce::AudioProcessorGraph::Node* owner,
+    WindowFormatType type)
+{
+    // Create a shared_ptr with a custom deleter that properly handles JUCE components
+    auto window = std::shared_ptr<PluginWindow>(new PluginWindow(pluginEditor, owner, type),
+        [](PluginWindow* w) {
+            // Use MessageManager to delete on the message thread if needed
+            if (juce::MessageManager::getInstance()->isThisTheMessageThread())
+                delete w;
+            else
+                juce::MessageManager::callAsync([w]() { delete w; });
+        });
+    
+    // Return the initialized window
+    return window;
+}
+
 PluginWindow::PluginWindow(juce::Component* const pluginEditor,
                            juce::AudioProcessorGraph::Node* const o,
                            WindowFormatType t)
@@ -47,15 +67,6 @@ PluginWindow::PluginWindow(juce::Component* const pluginEditor,
 
     owner->properties.set(getOpenProp(type), true);
     setVisible(true);
-
-    // Register this window in the active windows list using a shared_ptr
-    {
-        std::lock_guard<std::mutex> lock(activeWindowsMutex);
-        // First purge any expired references
-        purgeExpiredWindowReferences();
-        std::shared_ptr<PluginWindow> self = shared_from_this();
-        activePluginWindowsWeak.push_back(self);
-    }
     
     // Apply GPU acceleration if available
     applyGPUAccelerationIfAvailable();
@@ -236,43 +247,74 @@ void PluginWindow::closeCurrentlyOpenWindowsFor(const uint32 nodeId)
 {
     std::lock_guard<std::mutex> lock(activeWindowsMutex);
     purgeExpiredWindowReferences();
-    for (auto it = activePluginWindowsWeak.begin(); it != activePluginWindowsWeak.end();)
-    {
-        if (auto window = it->lock())
-        {
-            if (window->owner->nodeId == nodeId)
-            {
-                it = activePluginWindowsWeak.erase(it);
-                delete window.get();
-            }
-            else
-            {
-                ++it;
-            }
-        }
-        else
-        {
-            ++it;
-        }
-    }
-}
-
-void PluginWindow::closeAllCurrentlyOpenWindows()
-{
-    std::lock_guard<std::mutex> lock(activeWindowsMutex);
-    purgeExpiredWindowReferences();
+    
+    std::vector<std::shared_ptr<PluginWindow>> windowsToClose;
+    
+    // First collect all windows that need to be closed
     for (auto& weakWindow : activePluginWindowsWeak)
     {
         if (auto window = weakWindow.lock())
         {
-            delete window.get();
+            if (window->owner->nodeId == nodeId)
+                windowsToClose.push_back(window);
         }
     }
-    activePluginWindowsWeak.clear();
+    
+    // Then remove them from the active windows list
+    activePluginWindowsWeak.erase(
+        std::remove_if(activePluginWindowsWeak.begin(), activePluginWindowsWeak.end(),
+            [nodeId](const std::weak_ptr<PluginWindow>& weak) {
+                auto ptr = weak.lock();
+                return !ptr || (ptr->owner->nodeId == nodeId);
+            }),
+        activePluginWindowsWeak.end());
+    
+    // Close the windows safely outside the lock
+    for (auto& window : windowsToClose)
+    {
+        window->owner->properties.set(window->getOpenProp(window->type), false);
+        window->setVisible(false);
+    }
+    
+    // windowsToClose will be destroyed after this function exits,
+    // which will release the last references to those windows
+}
 
-    Component dummyModalComp;
+void PluginWindow::closeAllCurrentlyOpenWindows()
+{
+    std::vector<std::shared_ptr<PluginWindow>> windowsToClose;
+    
+    {
+        std::lock_guard<std::mutex> lock(activeWindowsMutex);
+        purgeExpiredWindowReferences();
+        
+        // First gather all active windows
+        for (auto& weakWindow : activePluginWindowsWeak)
+        {
+            if (auto window = weakWindow.lock())
+            {
+                windowsToClose.push_back(window);
+            }
+        }
+        
+        // Clear the active windows list
+        activePluginWindowsWeak.clear();
+    }
+    
+    // Close all the windows safely outside the lock
+    for (auto& window : windowsToClose)
+    {
+        window->owner->properties.set(window->getOpenProp(window->type), false);
+        window->setVisible(false);
+    }
+    
+    // Process any pending messages to ensure proper cleanup
+    juce::Component dummyModalComp;
     dummyModalComp.enterModalState();
-    MessageManager::getInstance()->runDispatchLoopUntil(50);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(50);
+    
+    // windowsToClose will be destroyed after this function exits,
+    // which will release the last references to those windows
 }
 
 bool PluginWindow::containsActiveWindows()
@@ -361,7 +403,7 @@ private:
 };
 
 //==============================================================================
-PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
+PluginWindow* PluginWindow::getWindowFor(juce::AudioProcessorGraph::Node* const node,
                                          WindowFormatType type)
 {
     jassert(node != nullptr);
@@ -379,8 +421,8 @@ PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
         }
     }
 
-    AudioProcessor* processor = node->getProcessor();
-    AudioProcessorEditor* ui = nullptr;
+    juce::AudioProcessor* processor = node->getProcessor();
+    juce::AudioProcessorEditor* ui = nullptr;
 
     if (type == Normal)
     {
@@ -395,11 +437,11 @@ PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
         if (type == Generic || type == Parameters)
         {
             // Create a more responsive generic editor with better automation control
-            AudioProcessorEditor* editor = new GenericAudioProcessorEditor(processor);
+            juce::AudioProcessorEditor* editor = new juce::GenericAudioProcessorEditor(processor);
             
             // Set a reasonable size for the generic editor
             const int numParameters = processor->getNumParameters();
-            const int preferredHeight = jmin(600, 100 + numParameters * 25);
+            const int preferredHeight = juce::jmin(600, 100 + numParameters * 25);
             editor->setSize(400, preferredHeight);
             
             ui = editor;
@@ -412,14 +454,16 @@ PluginWindow* PluginWindow::getWindowFor(AudioProcessorGraph::Node* const node,
 
     if (ui != nullptr)
     {
-        if (AudioPluginInstance* const plugin = dynamic_cast<AudioPluginInstance*>(processor))
+        if (juce::AudioPluginInstance* const plugin = dynamic_cast<juce::AudioPluginInstance*>(processor))
             ui->setName(plugin->getName());
 
-        auto newWindow = std::make_shared<PluginWindow>(ui, node, type);
-        {
-            std::lock_guard<std::mutex> lock(activeWindowsMutex);
-            activePluginWindowsWeak.push_back(newWindow);
-        }
+        // Use the factory method for proper shared_ptr management
+        auto newWindow = createPluginWindow(ui, node, type);
+        
+        // Store a weak reference to the window
+        std::lock_guard<std::mutex> lock(activeWindowsMutex);
+        activePluginWindowsWeak.push_back(newWindow);
+        
         return newWindow.get();
     }
 
@@ -448,5 +492,21 @@ void PluginWindow::moved()
 void PluginWindow::closeButtonPressed()
 {
     owner->properties.set(getOpenProp(type), false);
-    delete this;
+    
+    // Use proper removal from active windows instead of direct deletion
+    std::lock_guard<std::mutex> lock(activeWindowsMutex);
+    
+    // Find and remove this window from the activePluginWindowsWeak list
+    activePluginWindowsWeak.erase(
+        std::remove_if(activePluginWindowsWeak.begin(), activePluginWindowsWeak.end(),
+            [this](const std::weak_ptr<PluginWindow>& weak) {
+                auto ptr = weak.lock();
+                return !ptr || ptr.get() == this;
+            }),
+        activePluginWindowsWeak.end());
+    
+    // Schedule deletion through MessageManager to ensure thread safety
+    juce::MessageManager::callAsync([self = shared_from_this()]() {
+        // Window will be deleted when this lambda completes and the shared_ptr is released
+    });
 }

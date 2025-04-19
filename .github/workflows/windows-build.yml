@@ -1,0 +1,103 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Release, Debug]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+      
+    - name: Cache Projucer build
+      uses: actions/cache@v4
+      id: cache-projucer
+      with:
+        path: lib/juce/extras/Projucer/Builds/VisualStudio2022/x64/Release/App
+        key: ${{ runner.os }}-projucer-${{ hashFiles('lib/juce/extras/Projucer/**/*.cpp', 'lib/juce/extras/Projucer/**/*.h') }}
+        restore-keys: |
+          ${{ runner.os }}-projucer-
+        
+    - name: Setup Projucer
+      if: steps.cache-projucer.outputs.cache-hit != 'true'
+      run: |
+        cd lib/juce/extras/Projucer/Builds/VisualStudio2022
+        msbuild Projucer.sln /p:Configuration=Release /p:Platform=x64 /p:PreferredToolArchitecture=x64 /m
+      
+    - name: Generate Projects
+      id: generate-projects
+      run: |
+        $ProjucerPath = "lib/juce/extras/Projucer/Builds/VisualStudio2022/x64/Release/App/Projucer.exe"
+        & $ProjucerPath --resave "LightHost.jucer"
+        & $ProjucerPath --resave "NovaHost.jucer"
+      
+    - name: Build LightHost
+      id: build-lighthost
+      run: |
+        cd Builds/VisualStudio2022
+        msbuild LightHost.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /p:PreferredToolArchitecture=x64 /m
+        
+    - name: Build NovaHost
+      id: build-novahost
+      run: |
+        cd Builds/VisualStudio2022
+        msbuild NovaHost.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /p:PreferredToolArchitecture=x64 /m
+        
+    - name: Create installers
+      if: matrix.configuration == 'Release' && success()
+      run: |
+        # Install Inno Setup (silently)
+        $InnoSetupUrl = "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe"
+        $InnoSetupPath = "innosetup.exe"
+        Invoke-WebRequest -Uri $InnoSetupUrl -OutFile $InnoSetupPath
+        Start-Process -FilePath $InnoSetupPath -Args "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
+        
+        # Create output directory if it doesn't exist
+        New-Item -ItemType Directory -Force -Path Installer/Output
+        
+        # Run installer scripts
+        cd Installer
+        & ./BuildInstaller.bat
+        & ./BuildNovaHostInstaller.bat
+        
+    - name: Archive app artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Host-Windows-${{ matrix.configuration }}
+        path: |
+          Builds/VisualStudio2022/x64/${{ matrix.configuration }}/App/*.exe
+          Builds/VisualStudio2022/x64/${{ matrix.configuration }}/App/*.dll
+        retention-days: 7
+        
+    - name: Archive installers
+      if: matrix.configuration == 'Release' && success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Host-Windows-Installers
+        path: |
+          Installer/Output/*.exe
+        retention-days: 7

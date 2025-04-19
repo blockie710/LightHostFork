@@ -534,10 +534,25 @@ void IconMenu::menuInvocationCallback(int id, IconMenu* im)
                         
                         if (instance != nullptr)
                         {
-                            if (PluginWindow::getWindowFor(instance) != nullptr)
-                                PluginWindow::getWindowFor(instance)->toFront(true);
-                            else
-                                new PluginWindow(instance);
+                            // Look up the associated graph node for this processor
+                            juce::AudioProcessorGraph::Node* node = nullptr;
+                            for (auto n : im->graph.getNodes())
+                            {
+                                if (n->getProcessor() == instance)
+                                {
+                                    node = n;
+                                    break;
+                                }
+                            }
+                            
+                            if (node != nullptr)
+                            {
+                                // Use proper window creation with the factory method
+                                if (PluginWindow::getWindowFor(node, PluginWindow::Normal) != nullptr)
+                                    PluginWindow::getWindowFor(node, PluginWindow::Normal)->toFront(true);
+                                else
+                                    PluginWindow::createPluginWindow(instance->createEditorIfNeeded(), node, PluginWindow::Normal);
+                            }
                         }
                     }
                 }
