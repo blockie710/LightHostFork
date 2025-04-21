@@ -109,6 +109,7 @@ private:
     struct ComponentData {
         juce::Component* component = nullptr;
         bool continuousRepaint = false;
+        std::shared_ptr<ComponentCleanupHelper> cleanupHelper; // Added to store cleanup helper
     };
     
     std::map<juce::Component*, ComponentData> acceleratedComponents;
