@@ -1,4 +1,4 @@
-# Light Host Fork
+# NovaHost
 
 A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, and Linux that sits in the menu/task bar.
 
@@ -15,7 +15,7 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 
 ## Screenshot
 
-![Light Host 1.2](http://i.imgur.com/UF9SWfC.jpg)
+![NovaHost 1.2](http://i.imgur.com/UF9SWfC.jpg)
 
 ## Building from Source
 
@@ -30,7 +30,7 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 ### Compilation Steps
 
 1. Clone this repository
-2. Open the `LightHost.jucer` file with Projucer
+2. Open the `NovaHost.jucer` file with Projucer
 3. Select your target platform and export the project
 4. Build using your platform's development environment
 
@@ -76,7 +76,7 @@ static MyNewTests myNewTests;
 
 ## Project Status and Roadmap
 
-LightHostFork is under active development. We maintain a detailed task list with prioritized improvements:
+NovaHost is under active development. We maintain a detailed task list with prioritized improvements:
 
 - 🔴 **High Priority**: Memory management, thread safety, and error handling issues
 - 🟠 **Medium Priority**: Code organization and style consistency tasks
@@ -95,7 +95,7 @@ Contributions are welcome! Please check the [CONTRIBUTING.md](CONTRIBUTING.md) f
 
 ## Related Projects
 
-- [NovaHost](NovaHost/README.md): An enhanced fork with improved Windows support and additional features
+- [LightHost](https://github.com/rolandoislas/LightHost): The original project that NovaHost is based on
 
 ## Contributors
 
