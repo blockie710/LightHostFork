@@ -59,117 +59,98 @@ echo Backing up and fixing NovaHost.vcxproj file...
 copy NovaHost.vcxproj NovaHost.vcxproj.backup
 echo Original project file backed up to NovaHost.vcxproj.backup >> %LOGFILE%
 
-echo Adding proper project configurations to NovaHost.vcxproj...
-(
-echo ^<?xml version="1.0" encoding="utf-8"?^>
-echo ^<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^>
-echo   ^<ItemGroup Label="ProjectConfigurations"^>
-echo     ^<ProjectConfiguration Include="Debug|x64"^>
-echo       ^<Configuration^>Debug^</Configuration^>
-echo       ^<Platform^>x64^</Platform^>
-echo     ^</ProjectConfiguration^>
-echo     ^<ProjectConfiguration Include="Release|x64"^>
-echo       ^<Configuration^>Release^</Configuration^>
-echo       ^<Platform^>x64^</Platform^>
-echo     ^</ProjectConfiguration^>
-echo     ^<ProjectConfiguration Include="Debug|Win32"^>
-echo       ^<Configuration^>Debug^</Configuration^>
-echo       ^<Platform^>Win32^</Platform^>
-echo     ^</ProjectConfiguration^>
-echo     ^<ProjectConfiguration Include="Release|Win32"^>
-echo       ^<Configuration^>Release^</Configuration^>
-echo       ^<Platform^>Win32^</Platform^>
-echo     ^</ProjectConfiguration^>
-echo   ^</ItemGroup^>
-echo   ^<PropertyGroup Label="Globals"^>
-echo     ^<VCProjectVersion^>17.0^</VCProjectVersion^>
-echo     ^<ProjectGuid^>{0946F518-1A24-54EF-65AD-C90AE0521D03}^</ProjectGuid^>
-echo     ^<Keyword^>ManagedCProj^</Keyword^>
-echo     ^<ProjectName^>NovaHost^</ProjectName^>
-echo     ^<WindowsTargetPlatformVersion^>10.0^</WindowsTargetPlatformVersion^>
-echo   ^</PropertyGroup^>
-echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" /^>
-echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration"^>
-echo     ^<ConfigurationType^>Application^</ConfigurationType^>
-echo     ^<UseDebugLibraries^>true^</UseDebugLibraries^>
-echo     ^<PlatformToolset^>v143^</PlatformToolset^>
-echo     ^<CharacterSet^>Unicode^</CharacterSet^>
-echo   ^</PropertyGroup^>
-echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration"^>
-echo     ^<ConfigurationType^>Application^</ConfigurationType^>
-echo     ^<UseDebugLibraries^>false^</UseDebugLibraries^>
-echo     ^<PlatformToolset^>v143^</PlatformToolset^>
-echo     ^<WholeProgramOptimization^>true^</WholeProgramOptimization^>
-echo     ^<CharacterSet^>Unicode^</CharacterSet^>
-echo   ^</PropertyGroup^>
-echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration"^>
-echo     ^<ConfigurationType^>Application^</ConfigurationType^>
-echo     ^<UseDebugLibraries^>true^</UseDebugLibraries^>
-echo     ^<PlatformToolset^>v143^</PlatformToolset^>
-echo     ^<CharacterSet^>Unicode^</CharacterSet^>
-echo   ^</PropertyGroup^>
-echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration"^>
-echo     ^<ConfigurationType^>Application^</ConfigurationType^>
-echo     ^<UseDebugLibraries^>false^</UseDebugLibraries^>
-echo     ^<PlatformToolset^>v143^</PlatformToolset^>
-echo     ^<WholeProgramOptimization^>true^</WholeProgramOptimization^>
-echo     ^<CharacterSet^>Unicode^</CharacterSet^>
-echo   ^</PropertyGroup^>
-echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" /^>
-echo   ^<ImportGroup Label="ExtensionSettings"^>
-echo   ^</ImportGroup^>
-echo   ^<ImportGroup Label="Shared"^>
-echo   ^</ImportGroup^>
-echo   ^<ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"^>
-echo     ^<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /^>
-echo   ^</ImportGroup^>
-echo   ^<ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'"^>
-echo     ^<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /^>
-echo   ^</ImportGroup^>
-echo   ^<ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"^>
-echo     ^<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /^>
-echo   ^</ImportGroup^>
-echo   ^<ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^>
-echo     ^<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /^>
-echo   ^</ImportGroup^>
-echo   ^<PropertyGroup Label="UserMacros" /^>
-echo   ^<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^>
-echo     ^<ClCompile^>
-echo       ^<WarningLevel^>Level3^</WarningLevel^>
-echo       ^<FunctionLevelLinking^>true^</FunctionLevelLinking^>
-echo       ^<IntrinsicFunctions^>true^</IntrinsicFunctions^>
-echo       ^<SDLCheck^>true^</SDLCheck^>
-echo       ^<PreprocessorDefinitions^>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)^</PreprocessorDefinitions^>
-echo       ^<ConformanceMode^>true^</ConformanceMode^>
-echo     ^</ClCompile^>
-echo     ^<Link^>
-echo       ^<EnableCOMDATFolding^>true^</EnableCOMDATFolding^>
-echo       ^<OptimizeReferences^>true^</OptimizeReferences^>
-echo       ^<GenerateDebugInformation^>true^</GenerateDebugInformation^>
-echo       ^<SubSystem^>Windows^</SubSystem^>
-echo     ^</Link^>
-echo   ^</ItemDefinitionGroup^>
-echo   ^<ItemGroup^>
-echo     ^<ClCompile Include="Source\HostStartup.cpp" /^>
-echo     ^<ClCompile Include="Source\IconMenu.cpp" /^>
-echo     ^<ClCompile Include="Source\PluginWindow.cpp" /^>
-echo   ^</ItemGroup^>
-echo   ^<ItemGroup^>
-echo     ^<ClInclude Include="Source\IconMenu.hpp" /^>
-echo     ^<ClInclude Include="Source\PluginWindow.h" /^>
-echo   ^</ItemGroup^>
-echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /^>
-echo   ^<ImportGroup Label="ExtensionTargets"^>
-echo   ^</ImportGroup^>
-echo ^</Project^>
-) > NovaHost.vcxproj
+rem Create a temporary file with fixed project structure
+set TEMP_PROJECT=NovaHost.vcxproj.fixed
+echo Creating temporary project file: %TEMP_PROJECT%
 
+rem Using a proper method to create XML file
+echo ^<?xml version="1.0" encoding="utf-8"?^> > %TEMP_PROJECT%
+echo ^<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^> >> %TEMP_PROJECT%
+echo   ^<ItemGroup Label="ProjectConfigurations"^> >> %TEMP_PROJECT%
+echo     ^<ProjectConfiguration Include="Debug|x64"^> >> %TEMP_PROJECT%
+echo       ^<Configuration^>Debug^</Configuration^> >> %TEMP_PROJECT%
+echo       ^<Platform^>x64^</Platform^> >> %TEMP_PROJECT%
+echo     ^</ProjectConfiguration^> >> %TEMP_PROJECT%
+echo     ^<ProjectConfiguration Include="Release|x64"^> >> %TEMP_PROJECT%
+echo       ^<Configuration^>Release^</Configuration^> >> %TEMP_PROJECT%
+echo       ^<Platform^>x64^</Platform^> >> %TEMP_PROJECT%
+echo     ^</ProjectConfiguration^> >> %TEMP_PROJECT%
+echo   ^</ItemGroup^> >> %TEMP_PROJECT%
+echo   ^<PropertyGroup Label="Globals"^> >> %TEMP_PROJECT%
+echo     ^<VCProjectVersion^>17.0^</VCProjectVersion^> >> %TEMP_PROJECT%
+echo     ^<ProjectGuid^>{0946F518-1A24-54EF-65AD-C90AE0521D03}^</ProjectGuid^> >> %TEMP_PROJECT%
+echo     ^<Keyword^>ManagedCProj^</Keyword^> >> %TEMP_PROJECT%
+echo     ^<ProjectName^>NovaHost^</ProjectName^> >> %TEMP_PROJECT%
+echo     ^<WindowsTargetPlatformVersion^>10.0^</WindowsTargetPlatformVersion^> >> %TEMP_PROJECT%
+echo   ^</PropertyGroup^> >> %TEMP_PROJECT%
+echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" /^> >> %TEMP_PROJECT%
+echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration"^> >> %TEMP_PROJECT%
+echo     ^<ConfigurationType^>Application^</ConfigurationType^> >> %TEMP_PROJECT%
+echo     ^<UseDebugLibraries^>true^</UseDebugLibraries^> >> %TEMP_PROJECT%
+echo     ^<PlatformToolset^>v143^</PlatformToolset^> >> %TEMP_PROJECT%
+echo     ^<CharacterSet^>Unicode^</CharacterSet^> >> %TEMP_PROJECT%
+echo   ^</PropertyGroup^> >> %TEMP_PROJECT%
+echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration"^> >> %TEMP_PROJECT%
+echo     ^<ConfigurationType^>Application^</ConfigurationType^> >> %TEMP_PROJECT%
+echo     ^<UseDebugLibraries^>false^</UseDebugLibraries^> >> %TEMP_PROJECT%
+echo     ^<PlatformToolset^>v143^</PlatformToolset^> >> %TEMP_PROJECT%
+echo     ^<WholeProgramOptimization^>true^</WholeProgramOptimization^> >> %TEMP_PROJECT%
+echo     ^<CharacterSet^>Unicode^</CharacterSet^> >> %TEMP_PROJECT%
+echo   ^</PropertyGroup^> >> %TEMP_PROJECT%
+echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" /^> >> %TEMP_PROJECT%
+echo   ^<ImportGroup Label="ExtensionSettings"^> >> %TEMP_PROJECT%
+echo   ^</ImportGroup^> >> %TEMP_PROJECT%
+echo   ^<ImportGroup Label="Shared"^> >> %TEMP_PROJECT%
+echo   ^</ImportGroup^> >> %TEMP_PROJECT%
+echo   ^<ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"^> >> %TEMP_PROJECT%
+echo     ^<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /^> >> %TEMP_PROJECT%
+echo   ^</ImportGroup^> >> %TEMP_PROJECT%
+echo   ^<ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^> >> %TEMP_PROJECT%
+echo     ^<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /^> >> %TEMP_PROJECT%
+echo   ^</ImportGroup^> >> %TEMP_PROJECT%
+echo   ^<PropertyGroup Label="UserMacros" /^> >> %TEMP_PROJECT%
+echo   ^<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^> >> %TEMP_PROJECT%
+echo     ^<OutDir^>$(SolutionDir)Builds\VisualStudio2022\$(Platform)\$(Configuration)\^</OutDir^> >> %TEMP_PROJECT%
+echo     ^<TargetName^>Nova Host^</TargetName^> >> %TEMP_PROJECT%
+echo   ^</PropertyGroup^> >> %TEMP_PROJECT%
+echo   ^<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"^> >> %TEMP_PROJECT%
+echo     ^<ClCompile^> >> %TEMP_PROJECT%
+echo       ^<WarningLevel^>Level3^</WarningLevel^> >> %TEMP_PROJECT%
+echo       ^<FunctionLevelLinking^>true^</FunctionLevelLinking^> >> %TEMP_PROJECT%
+echo       ^<IntrinsicFunctions^>true^</IntrinsicFunctions^> >> %TEMP_PROJECT%
+echo       ^<SDLCheck^>true^</SDLCheck^> >> %TEMP_PROJECT%
+echo       ^<PreprocessorDefinitions^>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)^</PreprocessorDefinitions^> >> %TEMP_PROJECT%
+echo       ^<ConformanceMode^>true^</ConformanceMode^> >> %TEMP_PROJECT%
+echo     ^</ClCompile^> >> %TEMP_PROJECT%
+echo     ^<Link^> >> %TEMP_PROJECT%
+echo       ^<EnableCOMDATFolding^>true^</EnableCOMDATFolding^> >> %TEMP_PROJECT%
+echo       ^<OptimizeReferences^>true^</OptimizeReferences^> >> %TEMP_PROJECT%
+echo       ^<GenerateDebugInformation^>true^</GenerateDebugInformation^> >> %TEMP_PROJECT%
+echo       ^<SubSystem^>Windows^</SubSystem^> >> %TEMP_PROJECT%
+echo     ^</Link^> >> %TEMP_PROJECT%
+echo   ^</ItemDefinitionGroup^> >> %TEMP_PROJECT%
+echo   ^<ItemGroup^> >> %TEMP_PROJECT%
+echo     ^<ClCompile Include="Source\HostStartup.cpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClCompile Include="Source\IconMenu.cpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClCompile Include="Source\PluginWindow.cpp" /^> >> %TEMP_PROJECT%
+echo   ^</ItemGroup^> >> %TEMP_PROJECT%
+echo   ^<ItemGroup^> >> %TEMP_PROJECT%
+echo     ^<ClInclude Include="Source\IconMenu.hpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClInclude Include="Source\PluginWindow.h" /^> >> %TEMP_PROJECT%
+echo   ^</ItemGroup^> >> %TEMP_PROJECT%
+echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /^> >> %TEMP_PROJECT%
+echo   ^<ImportGroup Label="ExtensionTargets"^> >> %TEMP_PROJECT%
+echo   ^</ImportGroup^> >> %TEMP_PROJECT%
+echo ^</Project^> >> %TEMP_PROJECT%
+
+rem Replace the original project file with our fixed version
+move /y %TEMP_PROJECT% NovaHost.vcxproj > nul
 echo Fixed project file created >> %LOGFILE%
 
 rem Now try to build
 echo.
 echo Building NovaHost in Release mode...
-%MSBUILD_PATH% NovaHost.sln /p:Configuration=Release /p:Platform=x64 /v:detailed >> %LOGFILE% 2>&1
+%MSBUILD_PATH% NovaHost.sln /p:Configuration=Release /p:Platform=x64 /v:minimal /fl /flp:logfile=%LOGFILE%;verbosity=detailed
 
 if %ERRORLEVEL% NEQ 0 (
     echo Build failed with error code: %ERRORLEVEL%
