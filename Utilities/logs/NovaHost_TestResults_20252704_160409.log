@@ -21,3 +21,7 @@ Running at 16:05:42.13
 Plugin scan test: FAILED - No output file 
 [5/6] Multi-Instance Test 
 Running at 16:07:42.20 
+Multi-instance test results: 
+Multi-instance test: FAILED 
+[6/6] Unit Tests 
+Running at 16:08:12.13 
