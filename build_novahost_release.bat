@@ -8,12 +8,29 @@ call "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\V
 rem Change to project directory
 cd /d "%~dp0"
 
-rem Build NovaHost in Release mode for x64
-msbuild NovaHost.sln /p:Configuration=Release /p:Platform=x64 /m /v:m
+echo.
+echo Environment initialized. Building NovaHost...
+echo.
+
+rem Build NovaHost in Release mode for x64 with detailed output
+echo Running: msbuild NovaHost.sln /p:Configuration=Release /p:Platform=x64 /v:detailed
+msbuild NovaHost.sln /p:Configuration=Release /p:Platform=x64 /v:detailed
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Build failed with error code: %ERRORLEVEL%
+    echo.
+    echo Checking for common issues...
+    
+    if not exist "NovaHost.sln" (
+        echo ERROR: NovaHost.sln not found in current directory.
+        echo Current directory: %CD%
+        echo Files in current directory:
+        dir
+    )
+    
+    echo.
+    echo Please check the output above for specific error messages.
     echo.
     pause
     exit /b %ERRORLEVEL%
