@@ -1,6 +1,6 @@
 # NovaHost
 
-A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, and Linux that sits in the menu/task bar.
+A modern VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, and Linux that sits in the menu/task bar.
 
 ## Features
 
@@ -12,6 +12,7 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 - Multi-instance support via command line parameters
 - Persistent plugin settings
 - Plugin order can be rearranged with drag and drop
+- Cross-platform compatibility (Windows, macOS, Linux)
 
 ## Screenshot
 
@@ -37,7 +38,7 @@ NovaHost/
 └── Utilities/           # Utility scripts
 ```
 
-For more details on the project organization, see [Project Organization Guide](docs/PROJECT_ORGANIZATION.md).
+For more details on the project organization, see [Project Organization Guide](docs/PROJECT_ORGANIZATION.md) and [Implementation Guide](docs/IMPLEMENTATION_GUIDE.md).
 
 ## Building from Source
 
@@ -45,13 +46,13 @@ For more details on the project organization, see [Project Organization Guide](d
 
 - [JUCE Framework](https://juce.com/) (automatically included as a local copy)
 - C++ development environment:
-  - Windows: Visual Studio 2015/2022
-  - macOS: Xcode
-  - Linux: CodeBlocks or Make
+  - Windows: Visual Studio 2019/2022 (with C++ Desktop Development workload)
+  - macOS: Xcode 12+ with Command Line Tools
+  - Linux: GCC 9+ or Clang 10+, CodeBlocks or Make
 
 ### Compilation Steps
 
-1. Clone this repository
+1. Clone this repository: `git clone https://github.com/blockie710/NovaHost.git`
 2. Open the `NovaHost.jucer` file with Projucer
 3. Select your target platform and export the project
 4. Build using your platform's development environment
@@ -59,11 +60,14 @@ For more details on the project organization, see [Project Organization Guide](d
 #### Windows-Specific Instructions
 For detailed instructions on building and installing on Windows, see [Windows Installation Guide](docs/WINDOWS_INSTALL_GUIDE.md).
 
+#### macOS and Linux
+Additional platform-specific build instructions can be found in the documentation folder.
+
 ## Testing
 
 ### Running Tests
 
-1. Open the solution in Visual Studio
+1. Open the solution in your development environment
 2. Select the "Testing" configuration from the configuration dropdown
 3. Build and run the solution to execute all unit tests
 
@@ -95,6 +99,9 @@ static MyNewTests myNewTests;
 ## Command Line Options
 
 - `-multi-instance=NAME`: Run multiple instances with separate settings, where NAME is a unique identifier
+- `-plugins=PATH`: Specify a custom plugins folder path
+- `-settings=PATH`: Specify a custom settings file path
+- `-debug`: Enable additional debug output
 
 ## Project Status and Roadmap
 
@@ -115,15 +122,27 @@ Contributions are welcome! Please check the [CONTRIBUTING.md](CONTRIBUTING.md) f
 - Code style recommendations
 - Development setup instructions
 
+### Getting Started with Development
+
+1. Fork the repository
+2. Set up your development environment following the prerequisites above
+3. Review the [Project Organization Guide](docs/PROJECT_ORGANIZATION.md) to understand the codebase structure
+4. Check the issues tab for tasks labeled "good first issue"
+
 ## Related Projects
 
 - [LightHost](https://github.com/rolandoislas/LightHost): The original project that NovaHost is based on
+- [JUCE Framework](https://juce.com/): The C++ framework used to build NovaHost
 
 ## Contributors
 
-- [Rolando Islas](https://github.com/rolandoislas)
-- [blockie710](https://github.com/blockie710)
+- [Rolando Islas](https://github.com/rolandoislas) - Original LightHost creator
+- [blockie710](https://github.com/blockie710) - NovaHost fork maintainer
 
 ## License
 
 This project is licensed under the GNU General Public License v2 - see the [license](license) file for details.
+
+## Contact and Support
+
+For questions, issues, or feature requests, please open an issue on the GitHub repository.
