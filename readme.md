@@ -37,6 +37,39 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 #### Windows-Specific Instructions
 For detailed instructions on building and installing on Windows, see [Windows Installation Guide](Installer/WINDOWS_INSTALL_GUIDE.md).
 
+## Testing
+
+### Running Tests
+
+1. Open the solution in Visual Studio
+2. Select the "Testing" configuration from the configuration dropdown
+3. Build and run the solution to execute all unit tests
+
+### Writing Tests
+
+Tests are located in the `Tests/` directory and use JUCE's built-in unit testing framework. To add new tests:
+
+1. Create a new test class by extending `UnitTest`
+2. Implement the `runTest()` method with your test cases
+3. Register your test class using a static instance
+
+Example:
+```cpp
+class MyNewTests : public UnitTest
+{
+public:
+    MyNewTests() : UnitTest("My New Test Suite") {}
+    
+    void runTest() override
+    {
+        beginTest("Test Case Description");
+        expect(myCondition, "Expected condition description");
+    }
+};
+
+static MyNewTests myNewTests;
+```
+
 ## Command Line Options
 
 - `-multi-instance=NAME`: Run multiple instances with separate settings, where NAME is a unique identifier
