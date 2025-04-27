@@ -1,0 +1,17 @@
+Starting tests at 16:04:09.84 
+System Information: 
+OS Name:                       Microsoft Windows 11 Pro
+OS Version:                    10.0.26100 N/A Build 26100
+System Manufacturer:           ASUS
+System Model:                  System Product Name
+Processor(s):                  1 Processor(s) Installed.
+Total Physical Memory:         63,138 MB
+ 
+[1/6] Build Verification Test 
+Running at 16:04:12.30 
+Build verification: PASSED 
+[2/6] Load Test - Basic Functionality 
+Running at 16:04:12.31 
+Basic functionality: FAILED - No output file 
+[3/6] Memory Usage Test 
+Running at 16:04:42.16 
