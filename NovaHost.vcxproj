@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Configuration="Debug|x64" Value="Debug|x64"/>
+    <ProjectConfiguration Configuration="Release|x64" Value="Release|x64"/>
+    <ProjectConfiguration Configuration="Debug|x86" Value="Debug|x86"/>
+    <ProjectConfiguration Configuration="Release|x86" Value="Release|x86"/>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{0946F518-1A24-54EF-65AD-C90AE0521D03}</ProjectGuid>
+    <Keyword>ManagedCProj</Keyword>
+    <ProjectName>NovaHost</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
