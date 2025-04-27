@@ -1,0 +1,4 @@
+Build started at Sun 04/27/2025  2:44:09.52 
+Found Visual Studio at: C:\Program Files\Microsoft Visual Studio\2022\Professional 
+Using MSBuild at: "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" 
+Original project file backed up to NovaHost.vcxproj.backup 
