@@ -130,13 +130,13 @@ echo       ^<SubSystem^>Windows^</SubSystem^> >> %TEMP_PROJECT%
 echo     ^</Link^> >> %TEMP_PROJECT%
 echo   ^</ItemDefinitionGroup^> >> %TEMP_PROJECT%
 echo   ^<ItemGroup^> >> %TEMP_PROJECT%
-echo     ^<ClCompile Include="Source\HostStartup.cpp" /^> >> %TEMP_PROJECT%
-echo     ^<ClCompile Include="Source\IconMenu.cpp" /^> >> %TEMP_PROJECT%
-echo     ^<ClCompile Include="Source\PluginWindow.cpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClCompile Include="Source\Core\HostStartup.cpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClCompile Include="Source\UI\IconMenu.cpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClCompile Include="Source\Plugin\PluginWindow.cpp" /^> >> %TEMP_PROJECT%
 echo   ^</ItemGroup^> >> %TEMP_PROJECT%
 echo   ^<ItemGroup^> >> %TEMP_PROJECT%
-echo     ^<ClInclude Include="Source\IconMenu.hpp" /^> >> %TEMP_PROJECT%
-echo     ^<ClInclude Include="Source\PluginWindow.h" /^> >> %TEMP_PROJECT%
+echo     ^<ClInclude Include="Source\UI\IconMenu.hpp" /^> >> %TEMP_PROJECT%
+echo     ^<ClInclude Include="Source\Plugin\PluginWindow.h" /^> >> %TEMP_PROJECT%
 echo   ^</ItemGroup^> >> %TEMP_PROJECT%
 echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /^> >> %TEMP_PROJECT%
 echo   ^<ImportGroup Label="ExtensionTargets"^> >> %TEMP_PROJECT%
