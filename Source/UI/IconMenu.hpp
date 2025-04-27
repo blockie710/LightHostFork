@@ -60,7 +60,7 @@ private:
     AudioProcessorGraph::Node *inputNode;
     AudioProcessorGraph::Node *outputNode;
     StringArray pluginBlacklist;
-    std::mutex blacklistMutex;
+    mutable std::mutex blacklistMutex;
 	#if JUCE_WINDOWS
 	int x, y;
 	#endif

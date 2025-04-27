@@ -9,7 +9,7 @@
 // Update the include path to match project structure
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "IconMenu.hpp"
-#include "PluginWindow.h"
+#include "../Plugin/PluginWindow.h"
 #include <ctime>
 #include <limits.h>
 #include <memory> // Add std::unique_ptr support

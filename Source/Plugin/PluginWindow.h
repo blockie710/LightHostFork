@@ -1,6 +1,7 @@
 #ifndef PluginWindow_h
 #define PluginWindow_h
 
+// Updated path to match new project structure
 ApplicationProperties& getAppProperties();
 
 class PluginWindow  : public DocumentWindow

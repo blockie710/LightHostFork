@@ -1,6 +1,6 @@
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "../Source/IconMenu.hpp"
-#include "../Source/HostStartup.cpp"
+#include "../Source/UI/IconMenu.hpp"
+#include "../Source/Core/HostStartup.cpp"
 
 // Using JUCE's unit testing framework
 class PluginHostTests : public UnitTest
