@@ -17,6 +17,28 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 
 ![NovaHost 1.2](http://i.imgur.com/UF9SWfC.jpg)
 
+## Project Organization
+
+NovaHost follows a structured organization:
+
+```
+NovaHost/
+├── build/               # Build artifacts and generated files
+├── docs/                # Documentation files
+├── Installer/           # Installer scripts and resources
+├── Resources/           # Application resources (icons, images)
+├── Source/              # Main application source code
+│   ├── Core/            # Core application functionality
+│   ├── UI/              # User interface components
+│   ├── Plugin/          # Plugin management code
+│   └── Config/          # Configuration handling
+├── Tests/               # Test files
+├── third_party/         # Third-party libraries
+└── Utilities/           # Utility scripts
+```
+
+For more details on the project organization, see [Project Organization Guide](docs/PROJECT_ORGANIZATION.md).
+
 ## Building from Source
 
 ### Prerequisites
@@ -35,7 +57,7 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 4. Build using your platform's development environment
 
 #### Windows-Specific Instructions
-For detailed instructions on building and installing on Windows, see [Windows Installation Guide](Installer/WINDOWS_INSTALL_GUIDE.md).
+For detailed instructions on building and installing on Windows, see [Windows Installation Guide](docs/WINDOWS_INSTALL_GUIDE.md).
 
 ## Testing
 
