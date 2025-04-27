@@ -12,6 +12,7 @@
 #include "PluginWindow.h"
 #include <ctime>
 #include <limits.h>
+#include <memory> // Add std::unique_ptr support
 #if JUCE_WINDOWS
 #include "Windows.h"
 #endif
@@ -119,18 +120,18 @@ IconMenu::IconMenu() : INDEX_EDIT(1000000), INDEX_BYPASS(2000000), INDEX_DELETE(
 	x = y = 0;
 	#endif
     // Audio device
-    ScopedPointer<XmlElement> savedAudioState (getAppProperties().getUserSettings()->getXmlValue("audioDeviceState"));
-    deviceManager.initialise(256, 256, savedAudioState, true);
+    std::unique_ptr<XmlElement> savedAudioState(getAppProperties().getUserSettings()->getXmlValue("audioDeviceState"));
+    deviceManager.initialise(256, 256, savedAudioState.get(), true);
     player.setProcessor(&graph);
     deviceManager.addAudioCallback(&player);
     // Plugins - all
-    ScopedPointer<XmlElement> savedPluginList(getAppProperties().getUserSettings()->getXmlValue("pluginList"));
+    std::unique_ptr<XmlElement> savedPluginList(getAppProperties().getUserSettings()->getXmlValue("pluginList"));
     if (savedPluginList != nullptr)
         knownPluginList.recreateFromXml(*savedPluginList);
     pluginSortMethod = KnownPluginList::sortByManufacturer;
     knownPluginList.addChangeListener(this);
     // Plugins - active
-    ScopedPointer<XmlElement> savedPluginListActive(getAppProperties().getUserSettings()->getXmlValue("pluginListActive"));
+    std::unique_ptr<XmlElement> savedPluginListActive(getAppProperties().getUserSettings()->getXmlValue("pluginListActive"));
     if (savedPluginListActive != nullptr)
         activePluginList.recreateFromXml(*savedPluginListActive);
     loadActivePlugins();
@@ -142,6 +143,12 @@ IconMenu::IconMenu() : INDEX_EDIT(1000000), INDEX_BYPASS(2000000), INDEX_DELETE(
 IconMenu::~IconMenu()
 {
 	savePluginStates();
+	
+	// Proper resource cleanup
+	deviceManager.removeAudioCallback(&player);
+	player.setProcessor(nullptr);
+	knownPluginList.removeChangeListener(this);
+	activePluginList.removeChangeListener(this);
 }
 
 void IconMenu::setIcon()
@@ -179,28 +186,63 @@ void IconMenu::loadActivePlugins()
 	const int CHANNEL_TWO = 1;
 	PluginWindow::closeAllCurrentlyOpenWindows();
     graph.clear();
+    
+    // Get number of active plugins for pre-allocation
+    const int numPlugins = activePluginList.getNumTypes();
+    
+    // Pre-allocate connection arrays for better performance
+    // This avoids multiple reallocations during the connection process
+    Array<AudioProcessorGraph::Connection> connectionsToMake;
+    connectionsToMake.ensureStorageAllocated(numPlugins * 2 + 2);
+    
+    // Create input and output nodes
     inputNode = graph.addNode(new AudioProcessorGraph::AudioGraphIOProcessor(AudioProcessorGraph::AudioGraphIOProcessor::audioInputNode), INPUT);
     outputNode = graph.addNode(new AudioProcessorGraph::AudioGraphIOProcessor(AudioProcessorGraph::AudioGraphIOProcessor::audioOutputNode), OUTPUT);
-    if (activePluginList.getNumTypes() == 0)
+    
+    // Direct input to output if no plugins
+    if (numPlugins == 0)
     {
-        graph.addConnection(INPUT, CHANNEL_ONE, OUTPUT, CHANNEL_ONE);
-        graph.addConnection(INPUT, CHANNEL_TWO, OUTPUT, CHANNEL_TWO);
+        connectionsToMake.add(AudioProcessorGraph::Connection(INPUT, CHANNEL_ONE, OUTPUT, CHANNEL_ONE));
+        connectionsToMake.add(AudioProcessorGraph::Connection(INPUT, CHANNEL_TWO, OUTPUT, CHANNEL_TWO));
+        graph.addConnections(connectionsToMake);
+        return;
     }
+    
+    // Begin a transaction for better performance
+    graph.suspendProcessing(true);
+    
 	int pluginTime = 0;
 	int lastId = 0;
 	bool hasInputConnected = false;
+	std::vector<uint32> activeNodeIds;
+	activeNodeIds.reserve(numPlugins);
+	
 	// NOTE: Node ids cannot begin at 0.
-    for (int i = 1; i <= activePluginList.getNumTypes(); i++)
+    for (int i = 1; i <= numPlugins; i++)
     {
         PluginDescription plugin = getNextPluginOlderThanTime(pluginTime);
         String errorMessage;
-        AudioPluginInstance* instance = formatManager.createPluginInstance(plugin, graph.getSampleRate(), graph.getBlockSize(), errorMessage);
         
-        // Check if the plugin instance was created successfully
+        // Early check for blacklisted plugins
+        String pluginId = plugin.pluginFormatName + ":" + plugin.fileOrIdentifier;
+        if (isPluginBlacklisted(pluginId))
+            continue;
+            
+        // Check minimum channel requirements
+        if (plugin.numInputChannels < 2 || plugin.numOutputChannels < 2)
+            continue;
+            
+        // Create the instance with appropriate buffer size and sample rate
+        AudioPluginInstance* instance = formatManager.createPluginInstance(
+            plugin, 
+            graph.getSampleRate() > 0 ? graph.getSampleRate() : 44100.0,
+            graph.getBlockSize() > 0 ? graph.getBlockSize() : 512, 
+            errorMessage);
+        
         if (instance == nullptr)
         {
-            // Log the error and continue with the next plugin
-            std::cerr << "Failed to create plugin instance for " << plugin.name << ": " << errorMessage << std::endl;
+            // Log error and continue with next plugin
+            std::cerr << "Failed to load plugin " << plugin.name << ": " << errorMessage << std::endl;
             continue;
         }
         
@@ -208,10 +250,8 @@ void IconMenu::loadActivePlugins()
         String savedPluginState = getAppProperties().getUserSettings()->getValue(pluginUid);
         MemoryBlock savedPluginBinary;
         
-        // Only try to restore state if we have valid data
         if (savedPluginState.isNotEmpty() && savedPluginBinary.fromBase64Encoding(savedPluginState))
         {
-            // Protect against corrupt state data
             try
             {
                 instance->setStateInformation(savedPluginBinary.getData(), savedPluginBinary.getSize());
@@ -222,31 +262,52 @@ void IconMenu::loadActivePlugins()
             }
         }
         
+        // Add the node to the graph
         graph.addNode(instance, i);
+        activeNodeIds.push_back(i);
+        
 		String key = getKey("bypass", plugin);
 		bool bypass = getAppProperties().getUserSettings()->getBoolValue(key, false);
-        // Input to plugin
-        if ((!hasInputConnected) && (!bypass))
+        
+        // Skip bypassed plugins
+        if (bypass)
+            continue;
+            
+        // Input to plugin (first active plugin)
+        if (!hasInputConnected)
         {
-            graph.addConnection(INPUT, CHANNEL_ONE, i, CHANNEL_ONE);
-            graph.addConnection(INPUT, CHANNEL_TWO, i, CHANNEL_TWO);
+            connectionsToMake.add(AudioProcessorGraph::Connection(INPUT, CHANNEL_ONE, i, CHANNEL_ONE));
+            connectionsToMake.add(AudioProcessorGraph::Connection(INPUT, CHANNEL_TWO, i, CHANNEL_TWO));
 			hasInputConnected = true;
         }
         // Connect previous plugin to current
-        else if (!bypass)
+        else if (lastId > 0)
         {
-            graph.addConnection(lastId, CHANNEL_ONE, i, CHANNEL_ONE);
-            graph.addConnection(lastId, CHANNEL_TWO, i, CHANNEL_TWO);
+            connectionsToMake.add(AudioProcessorGraph::Connection(lastId, CHANNEL_ONE, i, CHANNEL_ONE));
+            connectionsToMake.add(AudioProcessorGraph::Connection(lastId, CHANNEL_TWO, i, CHANNEL_TWO));
         }
-		if (!bypass)
-			lastId = i;
+        
+		lastId = i;
     }
+    
 	if (lastId > 0)
 	{
 		// Last active plugin to output
-		graph.addConnection(lastId, CHANNEL_ONE, OUTPUT, CHANNEL_ONE);
-		graph.addConnection(lastId, CHANNEL_TWO, OUTPUT, CHANNEL_TWO);
+		connectionsToMake.add(AudioProcessorGraph::Connection(lastId, CHANNEL_ONE, OUTPUT, CHANNEL_ONE));
+		connectionsToMake.add(AudioProcessorGraph::Connection(lastId, CHANNEL_TWO, OUTPUT, CHANNEL_TWO));
 	}
+	else if (hasInputConnected == false && numPlugins > 0)
+	{
+	    // If we have plugins but none are active (all bypassed), connect input directly to output
+	    connectionsToMake.add(AudioProcessorGraph::Connection(INPUT, CHANNEL_ONE, OUTPUT, CHANNEL_ONE));
+	    connectionsToMake.add(AudioProcessorGraph::Connection(INPUT, CHANNEL_TWO, OUTPUT, CHANNEL_TWO));
+	}
+	
+	// Batch process all connections at once for better performance
+	graph.addConnections(connectionsToMake);
+	
+	// Resume processing
+	graph.suspendProcessing(false);
 }
 
 PluginDescription IconMenu::getNextPluginOlderThanTime(int &time)
@@ -290,19 +351,19 @@ void IconMenu::changeListenerCallback(ChangeBroadcaster* changed)
 {
     if (changed == &knownPluginList)
     {
-        ScopedPointer<XmlElement> savedPluginList (knownPluginList.createXml());
+        std::unique_ptr<XmlElement> savedPluginList(knownPluginList.createXml());
         if (savedPluginList != nullptr)
         {
-            getAppProperties().getUserSettings()->setValue ("pluginList", savedPluginList);
+            getAppProperties().getUserSettings()->setValue("pluginList", savedPluginList);
             getAppProperties().saveIfNeeded();
         }
     }
     else if (changed == &activePluginList)
     {
-        ScopedPointer<XmlElement> savedPluginList (activePluginList.createXml());
+        std::unique_ptr<XmlElement> savedPluginList(activePluginList.createXml());
         if (savedPluginList != nullptr)
         {
-            getAppProperties().getUserSettings()->setValue ("pluginListActive", savedPluginList);
+            getAppProperties().getUserSettings()->setValue("pluginListActive", savedPluginList);
             getAppProperties().saveIfNeeded();
         }
     }
@@ -628,7 +689,7 @@ void IconMenu::showAudioSettings()
 
     o.runModal();
         
-    ScopedPointer<XmlElement> audioState(deviceManager.createStateXml());
+    std::unique_ptr<XmlElement> audioState(deviceManager.createStateXml());
         
     getAppProperties().getUserSettings()->setValue("audioDeviceState", audioState);
     getAppProperties().getUserSettings()->saveIfNeeded();
@@ -637,7 +698,7 @@ void IconMenu::showAudioSettings()
 void IconMenu::reloadPlugins()
 {
 	if (pluginListWindow == nullptr)
-		pluginListWindow = new PluginListWindow(*this, formatManager);
+		pluginListWindow = std::make_unique<PluginListWindow>(*this, formatManager);
 	pluginListWindow->toFront(true);
 }
 
@@ -912,14 +973,14 @@ void IconMenu::safePluginScan(AudioPluginFormat* format, const String& formatNam
     if (format == nullptr)
         return;
         
-    // Create scan dialog
-    scanDialog = new PluginScanDialog(formatName, *this);
+    // Create scan dialog with std::unique_ptr for automatic resource management
+    std::unique_ptr<PluginScanDialog> scanDialogPtr = std::make_unique<PluginScanDialog>(formatName, *this);
     
     // Start scanning
-    if (scanDialog->runThread())
+    if (scanDialogPtr->runThread())
     {
         // Scan completed successfully
-        int numFound = scanDialog->getNumPluginsFound();
+        int numFound = scanDialogPtr->getNumPluginsFound();
         if (numFound > 0)
         {
             AlertWindow::showMessageBox(
@@ -936,4 +997,5 @@ void IconMenu::safePluginScan(AudioPluginFormat* format, const String& formatNam
         }
     }
     
-    scanDialog = nullptr;
+    // No need to manually delete - std::unique_ptr will automatically handle cleanup
+}

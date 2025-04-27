@@ -1,5 +1,6 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "IconMenu.hpp"
+#include <memory> // Add std::unique_ptr support
 
 #if ! (JUCE_PLUGINHOST_VST || JUCE_PLUGINHOST_VST3 || JUCE_PLUGINHOST_AU)
  #error "If you're building the audio plugin host, you probably want to enable VST and/or AU support"
@@ -13,9 +14,12 @@ public:
 
     void initialise (const String&) override
     {
-        // Enable high-DPI support on Windows 11
+        // Improved high-DPI support on Windows 11 with better scaling detection
         #if JUCE_WINDOWS
-        Desktop::getInstance().setGlobalScaleFactor(1.0);
+        // Get the display where the app is starting
+        const Desktop::Displays::Display& display = Desktop::getInstance().getDisplays().getMainDisplay();
+        // Apply the appropriate scale factor from the display
+        Desktop::getInstance().setGlobalScaleFactor(display.scale);
         #endif
         
         PropertiesFile::Options options;
@@ -25,12 +29,12 @@ public:
 
         checkArguments(&options);
 
-        appProperties = new ApplicationProperties();
+        appProperties = std::make_unique<ApplicationProperties>();
         appProperties->setStorageParameters (options);
 
         LookAndFeel::setDefaultLookAndFeel (&lookAndFeel);
 
-        mainWindow = new IconMenu();
+        mainWindow = std::make_unique<IconMenu>();
 		#if JUCE_MAC
 			Process::setDockIconVisible(false);
 		#endif
@@ -38,8 +42,8 @@ public:
 
     void shutdown() override
     {
-        mainWindow = nullptr;
-        appProperties = nullptr;
+        mainWindow.reset();
+        appProperties.reset();
         LookAndFeel::setDefaultLookAndFeel (nullptr);
     }
 
@@ -56,11 +60,11 @@ public:
     }
 
     ApplicationCommandManager commandManager;
-    ScopedPointer<ApplicationProperties> appProperties;
+    std::unique_ptr<ApplicationProperties> appProperties;
     LookAndFeel_V3 lookAndFeel;
 
 private:
-    ScopedPointer<IconMenu> mainWindow;
+    std::unique_ptr<IconMenu> mainWindow;
 
     StringArray getParameter(String lookFor) {
         StringArray parameters = getCommandLineParameterArray();

@@ -39,7 +39,7 @@ private:
         return Desktop::getInstance().getDisplays().getDisplayContaining(getScreenBounds().getCentre()).scale;
     }
     #else
-    float getDesktopScaleFactor() const override { return 1.0f; }
+    float getDesktopScaleFactor() const override { return Desktop::getInstance().getGlobalScaleFactor(); }
     #endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginWindow)

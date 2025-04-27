@@ -1,4 +1,4 @@
-# Light Host
+# Light Host Fork
 
 A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, and Linux that sits in the menu/task bar.
 
@@ -34,9 +34,35 @@ A simple VST/AU/VST3/LADSPA/LV2/AAX/ARA/AU v3 plugin host for macOS, Windows, an
 3. Select your target platform and export the project
 4. Build using your platform's development environment
 
+#### Windows-Specific Instructions
+For detailed instructions on building and installing on Windows, see [Windows Installation Guide](Installer/WINDOWS_INSTALL_GUIDE.md).
+
 ## Command Line Options
 
 - `-multi-instance=NAME`: Run multiple instances with separate settings, where NAME is a unique identifier
+
+## Project Status and Roadmap
+
+LightHostFork is under active development. We maintain a detailed task list with prioritized improvements:
+
+- 🔴 **High Priority**: Memory management, thread safety, and error handling issues
+- 🟠 **Medium Priority**: Code organization and style consistency tasks
+- 🟡 **Lower Priority**: C++ modernization and UX improvements
+
+See the [CONTRIBUTING.md](CONTRIBUTING.md) file for the complete task list and development roadmap.
+
+## Contributing
+
+Contributions are welcome! Please check the [CONTRIBUTING.md](CONTRIBUTING.md) file for:
+
+- Detailed task list and roadmap
+- Contribution guidelines
+- Code style recommendations
+- Development setup instructions
+
+## Related Projects
+
+- [NovaHost](NovaHost/README.md): An enhanced fork with improved Windows support and additional features
 
 ## Contributors
 
