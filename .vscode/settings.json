@@ -3,5 +3,7 @@
     "shellcheck.executablePath": "${workspaceFolder}\\tools\\shellcheck\\shellcheck.exe",
     "shellcheck.enable": true,
     "shellcheck.useWorkspaceRootAsCwd": true,
-    "shellcheck.run": "onSave"
+    "shellcheck.run": "onSave",
+    "editor.experimental.asyncClipboard": false,
+    "editor.copyWithSyntaxHighlighting": false
 }
