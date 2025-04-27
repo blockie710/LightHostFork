@@ -1,5 +1,5 @@
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "IconMenu.hpp"
+#include "../UI/IconMenu.hpp"
 #include <memory> // Add std::unique_ptr support
 
 #if ! (JUCE_PLUGINHOST_VST || JUCE_PLUGINHOST_VST3 || JUCE_PLUGINHOST_AU)
