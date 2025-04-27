@@ -15,3 +15,6 @@ Running at 16:04:12.31
 Basic functionality: FAILED - No output file 
 [3/6] Memory Usage Test 
 Running at 16:04:42.16 
+Memory test: FAILED - No output file 
+[4/6] Plugin Scanning Test 
+Running at 16:05:42.13 
