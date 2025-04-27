@@ -13,23 +13,32 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{72A93F1C-E7A5-4376-B066-2B32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{85B93F1C-E7A5-4376-B066-2B32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Plugin">
+      <UniqueIdentifier>{91C93F1C-E7A5-4376-B066-2B32D752A2FF}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\HostStartup.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Source\Core\HostStartup.cpp">
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
-    <ClCompile Include="source\IconMenu.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Source\UI\IconMenu.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
-    <ClCompile Include="source\PluginWindow.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Source\Plugin\PluginWindow.cpp">
+      <Filter>Source Files\Plugin</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\PluginWindow.h">
+    <ClInclude Include="Source\Plugin\PluginWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\IconMenu.hpp">
+    <ClInclude Include="Source\UI\IconMenu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
