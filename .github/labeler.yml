@@ -1,0 +1,44 @@
+# Add 'source' label to any changes in the Source directory
+source:
+  - Source/**/*
+
+# Add 'ui' label to any change in UI folders
+ui:
+  - Source/UI/**/*
+
+# Add 'core' label to any change in Core folders
+core:
+  - Source/Core/**/*
+
+# Add 'plugin' label to any change in Plugin folders
+plugin:
+  - Source/Plugin/**/*
+
+# Add 'configuration' label to any change in Config folders
+configuration:
+  - Source/Config/**/*
+  - Utilities/*.config
+
+# Add 'documentation' label to markdown files or docs directory
+documentation:
+  - '**/*.md'
+  - docs/**/*
+  - CONTRIBUTING.md
+  - readme.md
+  - WINDOWS_INSTALL_GUIDE.md
+
+# Add 'build' label for changes related to build process
+build:
+  - CMakeLists.txt
+  - '**/*.bat'
+  - '**/*.jucer'
+  - '**/*.vcxproj'
+  - '**/*.sln'
+
+# Add 'tests' label for changes to tests
+tests:
+  - Tests/**/*
+
+# Add 'installer' label for changes in Installer directory
+installer:
+  - Installer/**/*

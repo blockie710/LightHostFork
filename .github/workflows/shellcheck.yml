@@ -1,0 +1,31 @@
+name: "ShellCheck"
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - '**/*.sh'
+      - '**/*.bash'
+      - '.github/workflows/shellcheck.yml'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - '**/*.sh'
+      - '**/*.bash'
+      - '.github/workflows/shellcheck.yml'
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning  # Set to 'error' for stricter checking
+          check_together: 'yes'  # Check all files at once
+          scandir: '.'  # Scan the entire repository
+          # Optional: Exclude specific files or directories
+          # excludes: ./path/to/exclude
